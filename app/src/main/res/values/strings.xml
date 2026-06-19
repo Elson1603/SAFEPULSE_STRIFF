@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">SafePulse</string>
+    
+    <!-- Common -->
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_back">Back</string>
+    
+    <!-- Onboarding -->
+    <string name="onboarding_title">Welcome to SafePulse</string>
+    <string name="onboarding_subtitle">Your Personal Safety Companion</string>
+    <string name="onboarding_gender_title">Select Gender</string>
+    <string name="onboarding_gender_subtitle">This helps activate women safety features</string>
+    <string name="gender_male">Male</string>
+    <string name="gender_female">Female</string>
+    <string name="gender_other">Other</string>
+    <string name="onboarding_contacts_title">Emergency Contacts</string>
+    <string name="onboarding_contacts_subtitle">Add at least 2 emergency contacts</string>
+    <string name="add_contact">Add Contact</string>
+    <string name="contact_name">Name</string>
+    <string name="contact_phone">Phone Number</string>
+    <string name="set_as_primary">Set as Primary Contact</string>
+    <string name="onboarding_voice_title">Voice Trigger</string>
+    <string name="onboarding_voice_subtitle">Enable voice emergency keyword detection</string>
+    <string name="enable_voice_trigger">Enable Voice Trigger</string>
+    <string name="onboarding_complete">Get Started</string>
+    
+    <!-- Home Screen -->
+    <string name="home_title">SafePulse</string>
+    <string name="safety_service">Safety Service</string>
+    <string name="service_running">Service Running</string>
+    <string name="service_stopped">Service Stopped</string>
+    <string name="start_monitoring">Start Monitoring</string>
+    <string name="stop_monitoring">Stop Monitoring</string>
+    <string name="risk_level">Risk Level</string>
+    <string name="risk_low">Low</string>
+    <string name="risk_medium">Medium</string>
+    <string name="risk_high">High</string>
+    <string name="safety_mode">Safety Mode</string>
+    <string name="mode_normal">Normal</string>
+    <string name="mode_heightened">Heightened</string>
+    <string name="emergency_sos">Emergency SOS</string>
+    <string name="event_logs">Event Logs</string>
+    <string name="settings">Settings</string>
+    <string name="total_events">Total Events</string>
+    <string name="sos_sent">SOS Sent</string>
+    <string name="emergency_contacts">Emergency Contacts</string>
+    
+    <!-- Event Logs -->
+    <string name="logs_title">Event Logs</string>
+    <string name="no_events">No events recorded</string>
+    <string name="event_type">Event Type</string>
+    <string name="event_time">Time</string>
+    <string name="event_location">Location</string>
+    <string name="event_confidence">Confidence</string>
+    
+    <!-- Event Types -->
+    <string name="event_road_accident">Road Accident</string>
+    <string name="event_fall">Fall Detected</string>
+    <string name="event_assault">Possible Assault</string>
+    <string name="event_inactivity">Inactivity Alert</string>
+    <string name="event_voice_trigger">Voice Emergency</string>
+    <string name="event_manual_sos">Manual SOS</string>
+    <string name="event_high_risk_zone">High Risk Zone</string>
+    
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_general">General</string>
+    <string name="settings_safety">Safety</string>
+    <string name="settings_about">About</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="dark_mode_description">Enable dark theme</string>
+    <string name="voice_trigger">Voice Trigger</string>
+    <string name="voice_trigger_description">Enable voice emergency keywords</string>
+    <string name="change_gender">Change Gender</string>
+    <string name="manage_contacts">Manage Emergency Contacts</string>
+    <string name="app_version">App Version</string>
+    
+    <!-- Notifications -->
+    <string name="notification_channel_safety">Safety Monitoring</string>
+    <string name="notification_channel_emergency">Emergency Alerts</string>
+    <string name="notification_title_monitoring">SafePulse Active</string>
+    <string name="notification_text_monitoring">Monitoring your safety</string>
+    <string name="notification_title_high_risk">High Risk Zone</string>
+    <string name="notification_text_high_risk">You are in a high-risk area. Stay alert!</string>
+    <string name="notification_emergency_countdown">Emergency detected! Sending SOS in %1$d seconds</string>
+    <string name="notification_heightened_mode">Heightened safety mode activated</string>
+    
+    <!-- Permissions -->
+    <string name="permission_location_title">Location Permission</string>
+    <string name="permission_location_message">SafePulse needs your location to detect safety risks</string>
+    <string name="permission_sms_title">SMS Permission</string>
+    <string name="permission_sms_message">Required to send emergency messages</string>
+    <string name="permission_call_title">Call Permission</string>
+    <string name="permission_call_message">Required to make emergency calls</string>
+    
+    <!-- Errors -->
+    <string name="error_no_contacts">Please add at least 2 emergency contacts</string>
+    <string name="error_invalid_phone">Invalid phone number</string>
+    <string name="error_permission_denied">Permission denied. App will work with limited functionality</string>
+</resources>

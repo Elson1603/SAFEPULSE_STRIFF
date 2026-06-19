@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">SafePulse</string>
+    
+    <!-- Common -->
+    <string name="action_ok">ठीक है</string>
+    <string name="action_cancel">रद्द करें</string>
+    <string name="action_save">सहेजें</string>
+    <string name="action_back">वापस</string>
+    
+    <!-- Onboarding -->
+    <string name="onboarding_title">SafePulse में आपका स्वागत है</string>
+    <string name="onboarding_subtitle">आपका व्यक्तिगत सुरक्षा साथी</string>
+    <string name="onboarding_gender_title">लिंग चुनें</string>
+    <string name="onboarding_gender_subtitle">यह महिला सुरक्षा सुविधाओं को सक्रिय करने में मदद करता है</string>
+    <string name="gender_male">पुरुष</string>
+    <string name="gender_female">महिला</string>
+    <string name="gender_other">अन्य</string>
+    <string name="onboarding_contacts_title">आपातकालीन संपर्क</string>
+    <string name="onboarding_contacts_subtitle">कम से कम 2 आपातकालीन संपर्क जोड़ें</string>
+    <string name="add_contact">संपर्क जोड़ें</string>
+    <string name="contact_name">नाम</string>
+    <string name="contact_phone">फोन नंबर</string>
+    <string name="set_as_primary">प्राथमिक संपर्क के रूप में सेट करें</string>
+    <string name="onboarding_voice_title">वॉयस ट्रिगर</string>
+    <string name="onboarding_voice_subtitle">वॉयस आपातकालीन कीवर्ड डिटेक्शन सक्षम करें</string>
+    <string name="enable_voice_trigger">वॉयस ट्रिगर सक्षम करें</string>
+    <string name="onboarding_complete">शुरू करें</string>
+    
+    <!-- Home Screen -->
+    <string name="home_title">SafePulse</string>
+    <string name="safety_service">सुरक्षा सेवा</string>
+    <string name="service_running">सेवा चल रही है</string>
+    <string name="service_stopped">सेवा रुकी हुई है</string>
+    <string name="start_monitoring">निगरानी शुरू करें</string>
+    <string name="stop_monitoring">निगरानी रोकें</string>
+    <string name="risk_level">जोखिम स्तर</string>
+    <string name="risk_low">कम</string>
+    <string name="risk_medium">मध्यम</string>
+    <string name="risk_high">उच्च</string>
+    <string name="safety_mode">सुरक्षा मोड</string>
+    <string name="mode_normal">सामान्य</string>
+    <string name="mode_heightened">उच्च</string>
+    <string name="emergency_sos">आपातकालीन SOS</string>
+    <string name="event_logs">घटना लॉग</string>
+    <string name="settings">सेटिंग्स</string>
+    <string name="total_events">कुल घटनाएं</string>
+    <string name="sos_sent">SOS भेजा गया</string>
+    <string name="emergency_contacts">आपातकालीन संपर्क</string>
+    
+    <!-- Event Logs -->
+    <string name="logs_title">घटना लॉग</string>
+    <string name="no_events">कोई घटना दर्ज नहीं</string>
+    <string name="event_type">घटना प्रकार</string>
+    <string name="event_time">समय</string>
+    <string name="event_location">स्थान</string>
+    <string name="event_confidence">विश्वास</string>
+    
+    <!-- Event Types -->
+    <string name="event_road_accident">सड़क दुर्घटना</string>
+    <string name="event_fall">गिरने का पता चला</string>
+    <string name="event_assault">संभावित हमला</string>
+    <string name="event_inactivity">निष्क्रियता चेतावनी</string>
+    <string name="event_voice_trigger">वॉयस आपातकाल</string>
+    <string name="event_manual_sos">मैनुअल SOS</string>
+    <string name="event_high_risk_zone">उच्च जोखिम क्षेत्र</string>
+    
+    <!-- Settings Screen -->
+    <string name="settings_title">सेटिंग्स</string>
+    <string name="settings_general">सामान्य</string>
+    <string name="settings_safety">सुरक्षा</string>
+    <string name="settings_about">के बारे में</string>
+    <string name="dark_mode">डार्क मोड</string>
+    <string name="dark_mode_description">डार्क थीम सक्षम करें</string>
+    <string name="voice_trigger">वॉयस ट्रिगर</string>
+    <string name="voice_trigger_description">वॉयस आपातकालीन कीवर्ड सक्षम करें</string>
+    <string name="change_gender">लिंग बदलें</string>
+    <string name="manage_contacts">आपातकालीन संपर्क प्रबंधित करें</string>
+    <string name="app_version">ऐप संस्करण</string>
+    
+    <!-- Notifications -->
+    <string name="notification_channel_safety">सुरक्षा निगरानी</string>
+    <string name="notification_channel_emergency">आपातकालीन अलर्ट</string>
+    <string name="notification_title_monitoring">SafePulse सक्रिय</string>
+    <string name="notification_text_monitoring">आपकी सुरक्षा की निगरानी कर रहा है</string>
+    <string name="notification_title_high_risk">उच्च जोखिम क्षेत्र</string>
+    <string name="notification_text_high_risk">आप उच्च जोखिम वाले क्षेत्र में हैं। सतर्क रहें!</string>
+    <string name="notification_emergency_countdown">आपातकाल का पता चला! %1$d सेकंड में SOS भेजा जा रहा है</string>
+    <string name="notification_heightened_mode">उच्च सुरक्षा मोड सक्रिय</string>
+    
+    <!-- Permissions -->
+    <string name="permission_location_title">स्थान अनुमति</string>
+    <string name="permission_location_message">SafePulse को सुरक्षा जोखिमों का पता लगाने के लिए आपके स्थान की आवश्यकता है</string>
+    <string name="permission_sms_title">SMS अनुमति</string>
+    <string name="permission_sms_message">आपातकालीन संदेश भेजने के लिए आवश्यक</string>
+    <string name="permission_call_title">कॉल अनुमति</string>
+    <string name="permission_call_message">आपातकालीन कॉल करने के लिए आवश्यक</string>
+    
+    <!-- Errors -->
+    <string name="error_no_contacts">कृपया कम से कम 2 आपातकालीन संपर्क जोड़ें</string>
+    <string name="error_invalid_phone">अमान्य फोन नंबर</string>
+    <string name="error_permission_denied">अनुमति अस्वीकृत। ऐप सीमित कार्यक्षमता के साथ काम करेगा</string>
+</resources>

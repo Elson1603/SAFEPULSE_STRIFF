@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">SafePulse</string>
+    <string name="sos_button_label">SOS</string>
+    <string name="safety_status">Safety Status</string>
+    <string name="heart_rate">Heart Rate</string>
+    <string name="emergency_contacts">Emergency Contacts</string>
+    <string name="settings">Settings</string>
+    <string name="send_sos">Send SOS</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm_sos">Confirm SOS?</string>
+    <string name="sos_sent">SOS Sent to Phone</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="risk_low">Low Risk</string>
+    <string name="risk_medium">Medium Risk</string>
+    <string name="risk_high">High Risk</string>
+    <string name="bpm">BPM</string>
+    <string name="shake_to_sos">Shake to SOS</string>
+    <string name="monitoring_active">Monitoring Active</string>
+    <string name="monitoring_paused">Monitoring Paused</string>
+    <string name="silent_alert">Silent Alert</string>
+    <string name="fake_call">Fake Call</string>
+    <string name="share_location">Share Location</string>
+</resources>

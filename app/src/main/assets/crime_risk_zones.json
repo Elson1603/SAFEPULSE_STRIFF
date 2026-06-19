@@ -1,0 +1,459 @@
+[
+  {
+    "city": "Delhi",
+    "state": "Delhi",
+    "lat": 28.6139,
+    "lng": 77.2090,
+    "totalCrimes": 5400,
+    "violentCrimes": 1559,
+    "crimeRiskScore": 1.0,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 3000,
+    "dominantCrimes": ["IDENTITY THEFT", "ASSAULT", "FRAUD", "ROBBERY", "KIDNAPPING"],
+    "hotspots": [
+      {"lat": 28.6139, "lng": 77.2090, "risk": 0.95, "label": "Connaught Place"},
+      {"lat": 28.6562, "lng": 77.2410, "risk": 0.88, "label": "Old Delhi"},
+      {"lat": 28.5700, "lng": 77.2100, "risk": 0.82, "label": "Saket"},
+      {"lat": 28.6280, "lng": 77.2190, "risk": 0.90, "label": "Karol Bagh"},
+      {"lat": 28.6850, "lng": 77.2200, "risk": 0.78, "label": "Model Town"}
+    ]
+  },
+  {
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "lat": 19.0760,
+    "lng": 72.8777,
+    "totalCrimes": 4415,
+    "violentCrimes": 1270,
+    "crimeRiskScore": 0.82,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 2800,
+    "dominantCrimes": ["EXTORTION", "ASSAULT", "ROBBERY", "VEHICLE THEFT", "FRAUD"],
+    "hotspots": [
+      {"lat": 19.0760, "lng": 72.8777, "risk": 0.85, "label": "CST Area"},
+      {"lat": 19.0200, "lng": 72.8500, "risk": 0.80, "label": "Dharavi"},
+      {"lat": 19.1200, "lng": 72.8900, "risk": 0.75, "label": "Andheri"},
+      {"lat": 18.9600, "lng": 72.8300, "risk": 0.72, "label": "Colaba"},
+      {"lat": 19.1800, "lng": 72.9500, "risk": 0.68, "label": "Mulund"}
+    ]
+  },
+  {
+    "city": "Bangalore",
+    "state": "Karnataka",
+    "lat": 12.9716,
+    "lng": 77.5946,
+    "totalCrimes": 3588,
+    "violentCrimes": 1008,
+    "crimeRiskScore": 0.66,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 2500,
+    "dominantCrimes": ["BURGLARY", "CHAIN SNATCHING", "ROBBERY", "VEHICLE THEFT", "FRAUD"],
+    "hotspots": [
+      {"lat": 12.9716, "lng": 77.5946, "risk": 0.70, "label": "Majestic"},
+      {"lat": 12.9352, "lng": 77.6245, "risk": 0.65, "label": "Koramangala"},
+      {"lat": 13.0070, "lng": 77.5650, "risk": 0.62, "label": "Rajajinagar"},
+      {"lat": 12.9850, "lng": 77.6050, "risk": 0.60, "label": "MG Road"}
+    ]
+  },
+  {
+    "city": "Hyderabad",
+    "state": "Telangana",
+    "lat": 17.3850,
+    "lng": 78.4867,
+    "totalCrimes": 2881,
+    "violentCrimes": 855,
+    "crimeRiskScore": 0.53,
+    "violentCrimeRatio": 0.30,
+    "radiusMeters": 2300,
+    "dominantCrimes": ["ROBBERY", "BURGLARY", "ASSAULT", "VEHICLE THEFT", "KIDNAPPING"],
+    "hotspots": [
+      {"lat": 17.3850, "lng": 78.4867, "risk": 0.60, "label": "Charminar"},
+      {"lat": 17.4400, "lng": 78.3500, "risk": 0.55, "label": "Kukatpally"},
+      {"lat": 17.3600, "lng": 78.4700, "risk": 0.52, "label": "Falaknuma"}
+    ]
+  },
+  {
+    "city": "Kolkata",
+    "state": "West Bengal",
+    "lat": 22.5726,
+    "lng": 88.3639,
+    "totalCrimes": 2518,
+    "violentCrimes": 700,
+    "crimeRiskScore": 0.47,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 2200,
+    "dominantCrimes": ["FRAUD", "ROBBERY", "BURGLARY", "ASSAULT", "KIDNAPPING"],
+    "hotspots": [
+      {"lat": 22.5726, "lng": 88.3639, "risk": 0.55, "label": "Park Street"},
+      {"lat": 22.5400, "lng": 88.3400, "risk": 0.50, "label": "Howrah"},
+      {"lat": 22.6000, "lng": 88.4000, "risk": 0.45, "label": "Salt Lake"}
+    ]
+  },
+  {
+    "city": "Chennai",
+    "state": "Tamil Nadu",
+    "lat": 13.0827,
+    "lng": 80.2707,
+    "totalCrimes": 2493,
+    "violentCrimes": 691,
+    "crimeRiskScore": 0.46,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 2200,
+    "dominantCrimes": ["VEHICLE THEFT", "PUBLIC INTOXICATION", "COUNTERFEITING", "HOMICIDE", "ROBBERY"],
+    "hotspots": [
+      {"lat": 13.0827, "lng": 80.2707, "risk": 0.52, "label": "T. Nagar"},
+      {"lat": 13.0500, "lng": 80.2500, "risk": 0.48, "label": "Tambaram"},
+      {"lat": 13.1100, "lng": 80.2900, "risk": 0.45, "label": "Anna Nagar"}
+    ]
+  },
+  {
+    "city": "Pune",
+    "state": "Maharashtra",
+    "lat": 18.5204,
+    "lng": 73.8567,
+    "totalCrimes": 2212,
+    "violentCrimes": 602,
+    "crimeRiskScore": 0.41,
+    "violentCrimeRatio": 0.27,
+    "radiusMeters": 2000,
+    "dominantCrimes": ["BURGLARY", "VANDALISM", "ROBBERY", "ASSAULT", "FRAUD"],
+    "hotspots": [
+      {"lat": 18.5204, "lng": 73.8567, "risk": 0.48, "label": "Deccan"},
+      {"lat": 18.5000, "lng": 73.8300, "risk": 0.42, "label": "Swargate"},
+      {"lat": 18.5600, "lng": 73.9100, "risk": 0.38, "label": "Hadapsar"}
+    ]
+  },
+  {
+    "city": "Ahmedabad",
+    "state": "Gujarat",
+    "lat": 23.0225,
+    "lng": 72.5714,
+    "totalCrimes": 1817,
+    "violentCrimes": 559,
+    "crimeRiskScore": 0.34,
+    "violentCrimeRatio": 0.31,
+    "radiusMeters": 1800,
+    "dominantCrimes": ["IDENTITY THEFT", "ASSAULT", "ROBBERY", "FRAUD", "BURGLARY"],
+    "hotspots": [
+      {"lat": 23.0225, "lng": 72.5714, "risk": 0.42, "label": "Manek Chowk"},
+      {"lat": 23.0500, "lng": 72.5300, "risk": 0.35, "label": "Navrangpura"}
+    ]
+  },
+  {
+    "city": "Jaipur",
+    "state": "Rajasthan",
+    "lat": 26.9124,
+    "lng": 75.7873,
+    "totalCrimes": 1479,
+    "violentCrimes": 412,
+    "crimeRiskScore": 0.27,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 1700,
+    "dominantCrimes": ["ROBBERY", "FRAUD", "ASSAULT", "BURGLARY", "VEHICLE THEFT"],
+    "hotspots": [
+      {"lat": 26.9124, "lng": 75.7873, "risk": 0.35, "label": "Pink City"},
+      {"lat": 26.8800, "lng": 75.8200, "risk": 0.30, "label": "Malviya Nagar"}
+    ]
+  },
+  {
+    "city": "Lucknow",
+    "state": "Uttar Pradesh",
+    "lat": 26.8467,
+    "lng": 80.9462,
+    "totalCrimes": 1456,
+    "violentCrimes": 400,
+    "crimeRiskScore": 0.27,
+    "violentCrimeRatio": 0.27,
+    "radiusMeters": 1700,
+    "dominantCrimes": ["ROBBERY", "KIDNAPPING", "ASSAULT", "FRAUD", "BURGLARY"],
+    "hotspots": [
+      {"lat": 26.8467, "lng": 80.9462, "risk": 0.33, "label": "Hazratganj"},
+      {"lat": 26.8700, "lng": 80.9100, "risk": 0.28, "label": "Aminabad"}
+    ]
+  },
+  {
+    "city": "Kanpur",
+    "state": "Uttar Pradesh",
+    "lat": 26.4499,
+    "lng": 80.3319,
+    "totalCrimes": 1112,
+    "violentCrimes": 309,
+    "crimeRiskScore": 0.21,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 1500,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "KIDNAPPING", "FRAUD", "BURGLARY"],
+    "hotspots": [
+      {"lat": 26.4499, "lng": 80.3319, "risk": 0.28, "label": "Mall Road"}
+    ]
+  },
+  {
+    "city": "Surat",
+    "state": "Gujarat",
+    "lat": 21.1702,
+    "lng": 72.8311,
+    "totalCrimes": 1111,
+    "violentCrimes": 306,
+    "crimeRiskScore": 0.21,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 1500,
+    "dominantCrimes": ["IDENTITY THEFT", "FRAUD", "ROBBERY", "ASSAULT", "BURGLARY"],
+    "hotspots": [
+      {"lat": 21.1702, "lng": 72.8311, "risk": 0.27, "label": "Ring Road"}
+    ]
+  },
+  {
+    "city": "Nagpur",
+    "state": "Maharashtra",
+    "lat": 21.1458,
+    "lng": 79.0882,
+    "totalCrimes": 1053,
+    "violentCrimes": 297,
+    "crimeRiskScore": 0.20,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 1500,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "FRAUD", "BURGLARY", "VEHICLE THEFT"],
+    "hotspots": [
+      {"lat": 21.1458, "lng": 79.0882, "risk": 0.25, "label": "Sitabuldi"}
+    ]
+  },
+  {
+    "city": "Agra",
+    "state": "Uttar Pradesh",
+    "lat": 27.1767,
+    "lng": 78.0081,
+    "totalCrimes": 764,
+    "violentCrimes": 228,
+    "crimeRiskScore": 0.14,
+    "violentCrimeRatio": 0.30,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "KIDNAPPING", "FRAUD", "BURGLARY"],
+    "hotspots": [
+      {"lat": 27.1767, "lng": 78.0081, "risk": 0.22, "label": "Taj Area"}
+    ]
+  },
+  {
+    "city": "Ludhiana",
+    "state": "Punjab",
+    "lat": 30.9010,
+    "lng": 75.8573,
+    "totalCrimes": 761,
+    "violentCrimes": 214,
+    "crimeRiskScore": 0.14,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["KIDNAPPING", "ROBBERY", "ASSAULT", "BURGLARY", "FRAUD"],
+    "hotspots": [
+      {"lat": 30.9010, "lng": 75.8573, "risk": 0.20, "label": "Clock Tower"}
+    ]
+  },
+  {
+    "city": "Visakhapatnam",
+    "state": "Andhra Pradesh",
+    "lat": 17.6868,
+    "lng": 83.2185,
+    "totalCrimes": 728,
+    "violentCrimes": 207,
+    "crimeRiskScore": 0.13,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["FRAUD", "ROBBERY", "ASSAULT", "KIDNAPPING", "BURGLARY"],
+    "hotspots": [
+      {"lat": 17.6868, "lng": 83.2185, "risk": 0.20, "label": "Beach Road"}
+    ]
+  },
+  {
+    "city": "Thane",
+    "state": "Maharashtra",
+    "lat": 19.2183,
+    "lng": 72.9781,
+    "totalCrimes": 706,
+    "violentCrimes": 205,
+    "crimeRiskScore": 0.13,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "FRAUD", "BURGLARY", "VEHICLE THEFT"],
+    "hotspots": [
+      {"lat": 19.2183, "lng": 72.9781, "risk": 0.18, "label": "Thane Station"}
+    ]
+  },
+  {
+    "city": "Ghaziabad",
+    "state": "Uttar Pradesh",
+    "lat": 28.6692,
+    "lng": 77.4538,
+    "totalCrimes": 704,
+    "violentCrimes": 206,
+    "crimeRiskScore": 0.13,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "KIDNAPPING", "FRAUD", "BURGLARY"],
+    "hotspots": [
+      {"lat": 28.6692, "lng": 77.4538, "risk": 0.18, "label": "Vaishali"}
+    ]
+  },
+  {
+    "city": "Indore",
+    "state": "Madhya Pradesh",
+    "lat": 22.7196,
+    "lng": 75.8577,
+    "totalCrimes": 699,
+    "violentCrimes": 214,
+    "crimeRiskScore": 0.13,
+    "violentCrimeRatio": 0.31,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "FRAUD", "BURGLARY", "KIDNAPPING"],
+    "hotspots": [
+      {"lat": 22.7196, "lng": 75.8577, "risk": 0.18, "label": "Rajwada"}
+    ]
+  },
+  {
+    "city": "Patna",
+    "state": "Bihar",
+    "lat": 25.6093,
+    "lng": 85.1376,
+    "totalCrimes": 695,
+    "violentCrimes": 216,
+    "crimeRiskScore": 0.13,
+    "violentCrimeRatio": 0.31,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["KIDNAPPING", "ROBBERY", "ASSAULT", "FRAUD", "HOMICIDE"],
+    "hotspots": [
+      {"lat": 25.6093, "lng": 85.1376, "risk": 0.18, "label": "Gandhi Maidan"}
+    ]
+  },
+  {
+    "city": "Bhopal",
+    "state": "Madhya Pradesh",
+    "lat": 23.2599,
+    "lng": 77.4126,
+    "totalCrimes": 690,
+    "violentCrimes": 197,
+    "crimeRiskScore": 0.13,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 1200,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "FRAUD", "BURGLARY", "VEHICLE THEFT"],
+    "hotspots": [
+      {"lat": 23.2599, "lng": 77.4126, "risk": 0.17, "label": "New Market"}
+    ]
+  },
+  {
+    "city": "Meerut",
+    "state": "Uttar Pradesh",
+    "lat": 28.9845,
+    "lng": 77.7064,
+    "totalCrimes": 395,
+    "violentCrimes": 123,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.31,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "KIDNAPPING", "FRAUD"],
+    "hotspots": [
+      {"lat": 28.9845, "lng": 77.7064, "risk": 0.12, "label": "Meerut Cantt"}
+    ]
+  },
+  {
+    "city": "Srinagar",
+    "state": "Jammu & Kashmir",
+    "lat": 34.0837,
+    "lng": 74.7973,
+    "totalCrimes": 371,
+    "violentCrimes": 99,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.27,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "KIDNAPPING", "FRAUD"],
+    "hotspots": [
+      {"lat": 34.0837, "lng": 74.7973, "risk": 0.12, "label": "Lal Chowk"}
+    ]
+  },
+  {
+    "city": "Nashik",
+    "state": "Maharashtra",
+    "lat": 19.9975,
+    "lng": 73.7898,
+    "totalCrimes": 366,
+    "violentCrimes": 106,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "FRAUD", "ASSAULT", "BURGLARY"],
+    "hotspots": [
+      {"lat": 19.9975, "lng": 73.7898, "risk": 0.10, "label": "College Road"}
+    ]
+  },
+  {
+    "city": "Vasai-Virar",
+    "state": "Maharashtra",
+    "lat": 19.3607,
+    "lng": 72.8362,
+    "totalCrimes": 362,
+    "violentCrimes": 105,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.29,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "FRAUD", "BURGLARY"],
+    "hotspots": [
+      {"lat": 19.3607, "lng": 72.8362, "risk": 0.10, "label": "Vasai Road"}
+    ]
+  },
+  {
+    "city": "Kalyan",
+    "state": "Maharashtra",
+    "lat": 19.2437,
+    "lng": 73.1355,
+    "totalCrimes": 355,
+    "violentCrimes": 88,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.25,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "FRAUD", "ASSAULT", "BURGLARY"],
+    "hotspots": [
+      {"lat": 19.2437, "lng": 73.1355, "risk": 0.10, "label": "Kalyan Station"}
+    ]
+  },
+  {
+    "city": "Varanasi",
+    "state": "Uttar Pradesh",
+    "lat": 25.3176,
+    "lng": 82.9739,
+    "totalCrimes": 355,
+    "violentCrimes": 91,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.26,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "FRAUD", "ASSAULT", "KIDNAPPING"],
+    "hotspots": [
+      {"lat": 25.3176, "lng": 82.9739, "risk": 0.10, "label": "Dashashwamedh"}
+    ]
+  },
+  {
+    "city": "Faridabad",
+    "state": "Haryana",
+    "lat": 28.4089,
+    "lng": 77.3178,
+    "totalCrimes": 354,
+    "violentCrimes": 116,
+    "crimeRiskScore": 0.07,
+    "violentCrimeRatio": 0.33,
+    "radiusMeters": 1000,
+    "dominantCrimes": ["ROBBERY", "ASSAULT", "KIDNAPPING", "FRAUD"],
+    "hotspots": [
+      {"lat": 28.4089, "lng": 77.3178, "risk": 0.12, "label": "NIT Faridabad"}
+    ]
+  },
+  {
+    "city": "Rajkot",
+    "state": "Gujarat",
+    "lat": 22.3039,
+    "lng": 70.8022,
+    "totalCrimes": 320,
+    "violentCrimes": 89,
+    "crimeRiskScore": 0.06,
+    "violentCrimeRatio": 0.28,
+    "radiusMeters": 900,
+    "dominantCrimes": ["ROBBERY", "FRAUD", "ASSAULT", "BURGLARY"],
+    "hotspots": [
+      {"lat": 22.3039, "lng": 70.8022, "risk": 0.09, "label": "Race Course"}
+    ]
+  }
+]

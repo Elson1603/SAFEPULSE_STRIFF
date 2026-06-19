@@ -1,0 +1,74 @@
+[
+  {
+    "id": 1,
+    "lat": 28.6139,
+    "lng": 77.2090,
+    "radiusMeters": 500,
+    "baseRisk": 0.85,
+    "timeBucket": "night",
+    "roadType": "highway"
+  },
+  {
+    "id": 2,
+    "lat": 28.7041,
+    "lng": 77.1025,
+    "radiusMeters": 300,
+    "baseRisk": 0.65,
+    "timeBucket": "all",
+    "roadType": "urban"
+  },
+  {
+    "id": 3,
+    "lat": 28.5355,
+    "lng": 77.3910,
+    "radiusMeters": 400,
+    "baseRisk": 0.75,
+    "timeBucket": "evening",
+    "roadType": "highway"
+  },
+  {
+    "id": 4,
+    "lat": 28.4595,
+    "lng": 77.0266,
+    "radiusMeters": 350,
+    "baseRisk": 0.60,
+    "timeBucket": "all",
+    "roadType": "urban"
+  },
+  {
+    "id": 5,
+    "lat": 28.6280,
+    "lng": 77.2190,
+    "radiusMeters": 200,
+    "baseRisk": 0.90,
+    "timeBucket": "night",
+    "roadType": "highway"
+  },
+  {
+    "id": 6,
+    "lat": 19.0760,
+    "lng": 72.8777,
+    "radiusMeters": 450,
+    "baseRisk": 0.80,
+    "timeBucket": "night",
+    "roadType": "urban"
+  },
+  {
+    "id": 7,
+    "lat": 12.9716,
+    "lng": 77.5946,
+    "radiusMeters": 380,
+    "baseRisk": 0.70,
+    "timeBucket": "evening",
+    "roadType": "urban"
+  },
+  {
+    "id": 8,
+    "lat": 13.0827,
+    "lng": 80.2707,
+    "radiusMeters": 420,
+    "baseRisk": 0.75,
+    "timeBucket": "all",
+    "roadType": "highway"
+  }
+]

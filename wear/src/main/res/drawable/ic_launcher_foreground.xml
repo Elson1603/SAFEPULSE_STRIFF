@@ -1,0 +1,15 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shield icon with pulse line -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M54,20 L28,32 L28,52 C28,68 38,82 54,88 C70,82 80,68 80,52 L80,32 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,54 L46,54 L50,44 L54,64 L58,50 L62,54 L72,54"
+        android:strokeWidth="2.5"
+        android:strokeColor="#FFFFFF" />
+</vector>

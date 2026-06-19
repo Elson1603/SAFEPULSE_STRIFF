@@ -1,0 +1,74 @@
+[
+    {
+        "id": 1,
+        "lat": 28.6200,
+        "lng": 77.2100,
+        "radiusMeters": 400,
+        "crimeScore": 0.75,
+        "lightingScore": 0.25,
+        "footfallScore": 0.35
+    },
+    {
+        "id": 2,
+        "lat": 28.5500,
+        "lng": 77.2500,
+        "radiusMeters": 600,
+        "crimeScore": 0.90,
+        "lightingScore": 0.15,
+        "footfallScore": 0.20
+    },
+    {
+        "id": 3,
+        "lat": 28.6850,
+        "lng": 77.2200,
+        "radiusMeters": 350,
+        "crimeScore": 0.65,
+        "lightingScore": 0.40,
+        "footfallScore": 0.45
+    },
+    {
+        "id": 4,
+        "lat": 28.4500,
+        "lng": 77.0400,
+        "radiusMeters": 500,
+        "crimeScore": 0.80,
+        "lightingScore": 0.20,
+        "footfallScore": 0.30
+    },
+    {
+        "id": 5,
+        "lat": 19.0500,
+        "lng": 72.8600,
+        "radiusMeters": 450,
+        "crimeScore": 0.70,
+        "lightingScore": 0.30,
+        "footfallScore": 0.40
+    },
+    {
+        "id": 6,
+        "lat": 12.9500,
+        "lng": 77.5700,
+        "radiusMeters": 380,
+        "crimeScore": 0.60,
+        "lightingScore": 0.50,
+        "footfallScore": 0.55
+    },
+    {
+        "id": 7,
+        "lat": 13.0600,
+        "lng": 80.2400,
+        "radiusMeters": 420,
+        "crimeScore": 0.85,
+        "lightingScore": 0.25,
+        "footfallScore": 0.30
+    },
+    {
+        "id": 8,
+        "lat": 22.5726,
+        "lng": 88.3639,
+        "radiusMeters": 550,
+        "crimeScore": 0.78,
+        "lightingScore": 0.22,
+        "footfallScore": 0.28
+    }
+]

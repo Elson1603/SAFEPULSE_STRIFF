@@ -1,0 +1,272 @@
+[
+  {
+    "id": 1,
+    "name": "Rajouri Garden Police Station",
+    "type": "POLICE",
+    "address": "Rajouri Garden, New Delhi",
+    "phoneNumber": "+911145678901",
+    "lat": 28.6415,
+    "lng": 77.1214,
+    "city": "Delhi"
+  },
+  {
+    "id": 2,
+    "name": "Karol Bagh Police Station",
+    "type": "POLICE",
+    "address": "Karol Bagh, New Delhi",
+    "phoneNumber": "+911145678902",
+    "lat": 28.6519,
+    "lng": 77.1907,
+    "city": "Delhi"
+  },
+  {
+    "id": 3,
+    "name": "Hauz Khas Police Station",
+    "type": "POLICE",
+    "address": "Hauz Khas, New Delhi",
+    "phoneNumber": "+91114567890 3",
+    "lat": 28.5494,
+    "lng": 77.2001,
+    "city": "Delhi"
+  },
+  {
+    "id": 4,
+    "name": "Connaught Place Police Station",
+    "type": "POLICE",
+    "address": "Connaught Place, New Delhi",
+    "phoneNumber": "+911145678904",
+    "lat": 28.6304,
+    "lng": 77.2177,
+    "city": "Delhi"
+  },
+  {
+    "id": 5,
+    "name": "Saket Police Station",
+    "type": "POLICE",
+    "address": "Saket, New Delhi",
+    "phoneNumber": "+911145678905",
+    "lat": 28.5244,
+    "lng": 77.2066,
+    "city": "Delhi"
+  },
+  {
+    "id": 6,
+    "name": "AIIMS Hospital",
+    "type": "HOSPITAL",
+    "address": "Ansari Nagar, New Delhi",
+    "phoneNumber": "+911126588500",
+    "lat": 28.5672,
+    "lng": 77.2100,
+    "city": "Delhi"
+  },
+  {
+    "id": 7,
+    "name": "Sir Ganga Ram Hospital",
+    "type": "HOSPITAL",
+    "address": "Rajinder Nagar, New Delhi",
+    "phoneNumber": "+911125750000",
+    "lat": 28.6386,
+    "lng": 77.1859,
+    "city": "Delhi"
+  },
+  {
+    "id": 8,
+    "name": "Apollo Hospital Delhi",
+    "type": "HOSPITAL",
+    "address": "Sarita Vihar, New Delhi",
+    "phoneNumber": "+911129871090",
+    "lat": 28.5355,
+    "lng": 77.2850,
+    "city": "Delhi"
+  },
+  {
+    "id": 9,
+    "name": "Max Super Speciality Hospital Saket",
+    "type": "HOSPITAL",
+    "address": "Saket, New Delhi",
+    "phoneNumber": "+911126515050",
+    "lat": 28.5244,
+    "lng": 77.2111,
+    "city": "Delhi"
+  },
+  {
+    "id": 10,
+    "name": "Fortis Escorts Heart Institute",
+    "type": "HOSPITAL",
+    "address": "Okhla Road, New Delhi",
+    "phoneNumber": "+911147135000",
+    "lat": 28.5623,
+    "lng": 77.2740,
+    "city": "Delhi"
+  },
+  {
+    "id": 11,
+    "name": "Colaba Police Station",
+    "type": "POLICE",
+    "address": "Colaba, Mumbai",
+    "phoneNumber": "+912222185000",
+    "lat": 18.9067,
+    "lng": 72.8147,
+    "city": "Mumbai"
+  },
+  {
+    "id": 12,
+    "name": "Bandra Police Station",
+    "type": "POLICE",
+    "address": "Bandra West, Mumbai",
+    "phoneNumber": "+912226420111",
+    "lat": 19.0596,
+    "lng": 72.8295,
+    "city": "Mumbai"
+  },
+  {
+    "id": 13,
+    "name": "Andheri Police Station",
+    "type": "POLICE",
+    "address": "Andheri West, Mumbai",
+    "phoneNumber": "+912226737500",
+    "lat": 19.1136,
+    "lng": 72.8697,
+    "city": "Mumbai"
+  },
+  {
+    "id": 14,
+    "name": "Tata Memorial Hospital",
+    "type": "HOSPITAL",
+    "address": "Parel, Mumbai",
+    "phoneNumber": "+912224177000",
+    "lat": 19.0030,
+    "lng": 72.8439,
+    "city": "Mumbai"
+  },
+  {
+    "id": 15,
+    "name": "Lilavati Hospital",
+    "type": "HOSPITAL",
+    "address": "Bandra West, Mumbai",
+    "phoneNumber": "+912226567891",
+    "lat": 19.0521,
+    "lng": 72.8314,
+    "city": "Mumbai"
+  },
+  {
+    "id": 16,
+    "name": "Koramangala Police Station",
+    "type": "POLICE",
+    "address": "Koramangala, Bangalore",
+    "phoneNumber": "+918025533001",
+    "lat": 12.9352,
+    "lng": 77.6245,
+    "city": "Bangalore"
+  },
+  {
+    "id": 17,
+    "name": "Whitefield Police Station",
+    "type": "POLICE",
+    "address": "Whitefield, Bangalore",
+    "phoneNumber": "+918028452301",
+    "lat": 12.9698,
+    "lng": 77.7499,
+    "city": "Bangalore"
+  },
+  {
+    "id": 18,
+    "name": "Manipal Hospital Bangalore",
+    "type": "HOSPITAL",
+    "address": "HAL Airport Road, Bangalore",
+    "phoneNumber": "+918025024444",
+    "lat": 12.9698,
+    "lng": 77.6489,
+    "city": "Bangalore"
+  },
+  {
+    "id": 19,
+    "name": "Apollo Hospital Bangalore",
+    "type": "HOSPITAL",
+    "address": "Bannerghatta Road, Bangalore",
+    "phoneNumber": "+918026304050",
+    "lat": 12.8996,
+    "lng": 77.6088,
+    "city": "Bangalore"
+  },
+  {
+    "id": 20,
+    "name": "T Nagar Police Station",
+    "type": "POLICE",
+    "address": "T Nagar, Chennai",
+    "phoneNumber": "+914424346789",
+    "lat": 13.0339,
+    "lng": 80.2336,
+    "city": "Chennai"
+  },
+  {
+    "id": 21,
+    "name": "Adyar Police Station",
+    "type": "POLICE",
+    "address": "Adyar, Chennai",
+    "phoneNumber": "+914424912345",
+    "lat": 13.0067,
+    "lng": 80.2572,
+    "city": "Chennai"
+  },
+  {
+    "id": 22,
+    "name": "Apollo Hospital Chennai",
+    "type": "HOSPITAL",
+    "address": "Greams Lane, Chennai",
+    "phoneNumber": "+914428293333",
+    "lat": 13.0569,
+    "lng": 80.2497,
+    "city": "Chennai"
+  },
+  {
+    "id": 23,
+    "name": "Fortis Malar Hospital",
+    "type": "HOSPITAL",
+    "address": "Adyar, Chennai",
+    "phoneNumber": "+914442894333",
+    "lat": 13.0067,
+    "lng": 80.2516,
+    "city": "Chennai"
+  },
+  {
+    "id": 24,
+    "name": "Park Street Police Station",
+    "type": "POLICE",
+    "address": "Park Street, Kolkata",
+    "phoneNumber": "+913322146801",
+    "lat": 22.5543,
+    "lng": 88.3516,
+    "city": "Kolkata"
+  },
+  {
+    "id": 25,
+    "name": "Salt Lake Police Station",
+    "type": "POLICE",
+    "address": "Salt Lake, Kolkata",
+    "phoneNumber": "+913323571234",
+    "lat": 22.5726,
+    "lng": 88.4194,
+    "city": "Kolkata"
+  },
+  {
+    "id": 26,
+    "name": "AMRI Hospital Kolkata",
+    "type": "HOSPITAL",
+    "address": "Southern Avenue, Kolkata",
+    "phoneNumber": "+913366068888",
+    "lat": 22.5073,
+    "lng": 88.3625,
+    "city": "Kolkata"
+  },
+  {
+    "id": 27,
+    "name": "Apollo Gleneagles Hospital",
+    "type": "HOSPITAL",
+    "address": "EM Bypass, Kolkata",
+    "phoneNumber": "+913323203040",
+    "lat": 22.5137,
+    "lng": 88.3912,
+    "city": "Kolkata"
+  }
+]

@@ -1,0 +1,113 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Shield outline -->
+    <path
+        android:fillColor="#1E3A5F"
+        android:pathData="M54,20
+                         C54,20 30,25 30,25
+                         C30,25 30,50 30,50
+                         C30,70 42,82 54,88
+                         C66,82 78,70 78,50
+                         C78,50 78,25 78,25
+                         C78,25 54,20 54,20
+                         Z
+                         M54,25
+                         C54,25 73,29 73,29
+                         C73,29 73,50 73,50
+                         C73,67 63,77 54,82
+                         C45,77 35,67 35,50
+                         C35,50 35,29 35,29
+                         C35,29 54,25 54,25
+                         Z"/>
+    
+    <!-- Center person (larger) -->
+    <group>
+        <!-- Head -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M54,42
+                             C56.5,42 58.5,44 58.5,46.5
+                             C58.5,49 56.5,51 54,51
+                             C51.5,51 49.5,49 49.5,46.5
+                             C49.5,44 51.5,42 54,42
+                             Z"/>
+        <!-- Body -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M54,52
+                             L51,52
+                             L48,62
+                             L48,72
+                             L51,72
+                             L51,62
+                             L54,62
+                             L57,62
+                             L57,72
+                             L60,72
+                             L60,62
+                             L57,52
+                             Z"/>
+    </group>
+    
+    <!-- Left person (smaller) -->
+    <group>
+        <!-- Head -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M42,47
+                             C43.7,47 45,48.3 45,50
+                             C45,51.7 43.7,53 42,53
+                             C40.3,53 39,51.7 39,50
+                             C39,48.3 40.3,47 42,47
+                             Z"/>
+        <!-- Body -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M42,54
+                             L40,54
+                             L38,62
+                             L38,70
+                             L40,70
+                             L40,62
+                             L42,62
+                             L44,62
+                             L44,70
+                             L46,70
+                             L46,62
+                             L44,54
+                             Z"/>
+    </group>
+    
+    <!-- Right person (smaller) -->
+    <group>
+        <!-- Head -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M66,47
+                             C67.7,47 69,48.3 69,50
+                             C69,51.7 67.7,53 66,53
+                             C64.3,53 63,51.7 63,50
+                             C63,48.3 64.3,47 66,47
+                             Z"/>
+        <!-- Body -->
+        <path
+            android:fillColor="#4A90E2"
+            android:pathData="M66,54
+                             L64,54
+                             L62,62
+                             L62,70
+                             L64,70
+                             L64,62
+                             L66,62
+                             L68,62
+                             L68,70
+                             L70,70
+                             L70,62
+                             L68,54
+                             Z"/>
+    </group>
+</vector>
