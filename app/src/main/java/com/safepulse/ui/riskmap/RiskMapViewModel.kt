@@ -41,7 +41,7 @@ class RiskMapViewModel(
     private val _safetyPlaces = MutableStateFlow<List<SafetyPlace>>(emptyList())
     val safetyPlaces: StateFlow<List<SafetyPlace>> = _safetyPlaces.asStateFlow()
 
-    private val _showSafetyPlaces = MutableStateFlow(true)
+    private val _showSafetyPlaces = MutableStateFlow(false)
     val showSafetyPlaces: StateFlow<Boolean> = _showSafetyPlaces.asStateFlow()
 
     private val _policeStations = MutableStateFlow<List<PoliceStationData>>(emptyList())
@@ -63,10 +63,10 @@ class RiskMapViewModel(
             try {
                 val data = riskZoneRepository.loadAllRiskData()
                 _uiState.value = RiskMapUiState.Success(data)
-                // Load crime zones for safe routing in JS
-                _crimeZonesForMap.value = riskZoneRepository.getCrimeZonesForMap()
                 val loc = _currentLocation.value
                 val center = loc ?: LatLng(28.6139, 77.2090)
+                // Load nearby crime zones for safe routing in JS without sending the full dataset.
+                _crimeZonesForMap.value = riskZoneRepository.getCrimeZonesForMapNear(center)
                 _safetyPlaces.value = riskZoneRepository.getSafetyPlacesNear(center, 30.0)
                 if (!nearbyLayerDataLoaded) {
                     nearbyLayerDataLoaded = true
@@ -117,6 +117,7 @@ class RiskMapViewModel(
                 .take(MAX_LAYER_MARKERS)
             _safeZones.value = riskZoneRepository.getSafeZonesNear(location, 50.0)
                 .take(MAX_SAFE_ZONE_MARKERS)
+            _crimeZonesForMap.value = riskZoneRepository.getCrimeZonesForMapNear(location)
         }
     }
 

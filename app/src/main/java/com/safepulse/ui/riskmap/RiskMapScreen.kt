@@ -110,27 +110,26 @@ fun RiskMapScreen(
         )
     }
 
-    // Load police stations as a persistent layer
-    // Load all-India police stations as persistent layer
-    LaunchedEffect(policeStations, mapController) {
+    LaunchedEffect(policeStations, showSafetyPlaces, mapController) {
         val ctrl = mapController ?: return@LaunchedEffect
-        if (policeStations.isNotEmpty()) {
+        ctrl.clearPolice()
+        if (showSafetyPlaces && policeStations.isNotEmpty()) {
             ctrl.addPoliceStations(policeStations)
         }
     }
 
-    // Load all-India hospitals as persistent layer
-    LaunchedEffect(hospitals, mapController) {
+    LaunchedEffect(hospitals, showSafetyPlaces, mapController) {
         val ctrl = mapController ?: return@LaunchedEffect
-        if (hospitals.isNotEmpty()) {
+        ctrl.clearHospitals()
+        if (showSafetyPlaces && hospitals.isNotEmpty()) {
             ctrl.addHospitals(hospitals)
         }
     }
 
-    // Load all-India safe zones as persistent layer
-    LaunchedEffect(safeZones, mapController) {
+    LaunchedEffect(safeZones, showSafetyPlaces, mapController) {
         val ctrl = mapController ?: return@LaunchedEffect
-        if (safeZones.isNotEmpty()) {
+        ctrl.clearSafeZones()
+        if (showSafetyPlaces && safeZones.isNotEmpty()) {
             ctrl.addSafeZones(safeZones)
         }
     }
@@ -651,10 +650,29 @@ private fun drawRiskOverlays(
     val markers = mutableListOf<MarkerData>()
     val polylines = mutableListOf<PolylineData>()
     val boundsPoints = mutableListOf<LatLng>()
+    val mapCenter = currentLocation ?: LatLng(28.6139, 77.2090)
+    val visibleCrimeZones = riskData.crimeZones
+        .asSequence()
+        .filter { zone -> distanceKm(mapCenter, zone.location) <= RISK_MAP_RADIUS_KM || zone.crimeRiskScore >= 0.85f }
+        .sortedWith(
+            compareByDescending<CrimeRiskZone> { it.crimeRiskScore }
+                .thenBy { distanceKm(mapCenter, it.location) }
+        )
+        .take(MAX_RISK_ZONE_MARKERS)
+        .toList()
+    val visibleDisasterZones = riskData.disasterZones
+        .asSequence()
+        .filter { zone -> distanceKm(mapCenter, zone.location) <= RISK_MAP_RADIUS_KM || zone.combinedDisasterRisk >= 0.75f }
+        .sortedWith(
+            compareByDescending<DisasterRiskZone> { it.combinedDisasterRisk }
+                .thenBy { distanceKm(mapCenter, it.location) }
+        )
+        .take(MAX_DISASTER_ZONE_MARKERS)
+        .toList()
 
     // Crime risk circles & hotspot markers
     if (filter == RiskFilter.ALL || filter == RiskFilter.CRIME_ONLY) {
-        for (zone in riskData.crimeZones) {
+        for (zone in visibleCrimeZones) {
             val (fill, stroke) = when {
                 zone.crimeRiskScore >= 0.5f -> "#F44336" to "#F44336"
                 zone.crimeRiskScore >= 0.2f -> "#FF9800" to "#FF9800"
@@ -682,7 +700,7 @@ private fun drawRiskOverlays(
 
     // Disaster risk circles & markers
     if (filter == RiskFilter.ALL || filter == RiskFilter.DISASTER_ONLY) {
-        for (zone in riskData.disasterZones) {
+        for (zone in visibleDisasterZones) {
             if (zone.floodRisk >= 0.4f) {
                 circles.add(CircleData(
                     zone.location.latitude, zone.location.longitude,
@@ -726,22 +744,6 @@ private fun drawRiskOverlays(
         best
     } else null
 
-    // Safety places
-    for (place in safetyPlaces) {
-        val (emoji, bgColor) = when (place.type) {
-            SafetyPlaceType.POLICE -> "\uD83D\uDE94" to "#1565C0"
-            SafetyPlaceType.HOSPITAL -> "\uD83C\uDFE5" to "#D32F2F"
-        }
-        val snippet = if (place.address.isNotEmpty() && place.phoneNumber.isNotEmpty())
-            "${place.address} \u2022 ${place.phoneNumber}"
-        else if (place.address.isNotEmpty()) place.address
-        else ""
-        markers.add(MarkerData(
-            place.location.latitude, place.location.longitude,
-            "$emoji ${place.name}", snippet, bgColor, emoji, bgColor
-        ))
-    }
-
     currentLocation?.let { boundsPoints.add(it) }
 
     ctrl.batchUpdate(MapUpdateData(
@@ -779,3 +781,19 @@ private fun fetchCurrentLocation(
         onLocation(LatLng(28.6139, 77.2090))
     }
 }
+
+private fun distanceKm(p1: LatLng, p2: LatLng): Double {
+    val earthRadius = 6371.0
+    val dLat = Math.toRadians(p2.latitude - p1.latitude)
+    val dLng = Math.toRadians(p2.longitude - p1.longitude)
+    val a = kotlin.math.sin(dLat / 2) * kotlin.math.sin(dLat / 2) +
+        kotlin.math.cos(Math.toRadians(p1.latitude)) *
+        kotlin.math.cos(Math.toRadians(p2.latitude)) *
+        kotlin.math.sin(dLng / 2) * kotlin.math.sin(dLng / 2)
+    val c = 2 * kotlin.math.atan2(kotlin.math.sqrt(a), kotlin.math.sqrt(1 - a))
+    return earthRadius * c
+}
+
+private const val RISK_MAP_RADIUS_KM = 85.0
+private const val MAX_RISK_ZONE_MARKERS = 120
+private const val MAX_DISASTER_ZONE_MARKERS = 40

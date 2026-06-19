@@ -12,8 +12,8 @@ import com.safepulse.ui.map.SafeZoneData
 import kotlin.math.*
 
 /**
- * Repository that loads pre-processed crime and disaster risk data from CSV-trained JSON assets.
- * Data sources: crime_dataset_india.csv (40K+ crime records) and landslide.csv (4K+ disaster records)
+ * Repository that loads risk data for the map.
+ * Primary source: master_dataset.csv. Legacy JSON assets are used only as fallback.
  */
 class RiskZoneRepository(private val context: Context) {
 
@@ -23,6 +23,11 @@ class RiskZoneRepository(private val context: Context) {
 
     fun loadCrimeRiskZones(): List<CrimeRiskZone> {
         crimeZonesCache?.let { return it }
+
+        loadMasterDatasetCrimeZones()?.let { zones ->
+            crimeZonesCache = zones
+            return zones
+        }
 
         return try {
             val json = context.assets.open("crime_risk_zones.json")
@@ -40,6 +45,11 @@ class RiskZoneRepository(private val context: Context) {
 
     fun loadDisasterRiskZones(): List<DisasterRiskZone> {
         disasterZonesCache?.let { return it }
+
+        loadMasterDatasetDisasterZones()?.let { zones ->
+            disasterZonesCache = zones
+            return zones
+        }
 
         return try {
             val json = context.assets.open("disaster_risk_zones.json")
@@ -59,6 +69,62 @@ class RiskZoneRepository(private val context: Context) {
         return CombinedRiskData(
             crimeZones = loadCrimeRiskZones(),
             disasterZones = loadDisasterRiskZones()
+        )
+    }
+
+    private fun loadMasterDatasetCrimeZones(): List<CrimeRiskZone>? {
+        return runCatching {
+            context.assets.open(MASTER_DATASET_ASSET).bufferedReader().useLines { lines ->
+                lines.drop(1)
+                    .mapNotNull { line -> parseMasterDatasetRow(line)?.toCrimeRiskZone() }
+                    .toList()
+            }
+        }.getOrNull()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun loadMasterDatasetDisasterZones(): List<DisasterRiskZone>? {
+        return runCatching {
+            context.assets.open(MASTER_DATASET_ASSET).bufferedReader().useLines { lines ->
+                lines.drop(1)
+                    .mapNotNull { line -> parseMasterDatasetRow(line)?.toDisasterRiskZone() }
+                    .toList()
+            }
+        }.getOrNull()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun parseMasterDatasetRow(line: String): MasterRiskRow? {
+        val c = line.split(',')
+        if (c.size < 20) return null
+
+        val start = LatLng(
+            c[3].toDoubleOrNull() ?: return null,
+            c[4].toDoubleOrNull() ?: return null
+        )
+        val end = LatLng(
+            c[5].toDoubleOrNull() ?: return null,
+            c[6].toDoubleOrNull() ?: return null
+        )
+        if (!start.isLikelyIndiaCoordinate() || !end.isLikelyIndiaCoordinate()) return null
+
+        return MasterRiskRow(
+            segmentId = c[0],
+            region = c[1],
+            subRegion = c[2],
+            start = start,
+            end = end,
+            roadType = c[7],
+            crimeType = c[8],
+            crimeCount = c[9].toIntOrNull() ?: 0,
+            crimeScore = c[10].toFloatOrNull() ?: 0f,
+            timeSlot = c[11],
+            weekday = c[12],
+            crowdDensity = c[13].toIntOrNull() ?: 0,
+            lightingScore = c[14].toIntOrNull() ?: 0,
+            policeDistanceKm = c[15].toFloatOrNull() ?: 0f,
+            weather = c[16],
+            transitHub = c[17] == "1",
+            riskScore = (c[18].toFloatOrNull() ?: 0f).coerceIn(0f, 1f),
+            riskLabel = c[19]
         )
     }
 
@@ -438,7 +504,31 @@ class RiskZoneRepository(private val context: Context) {
         }
     }
 
+    fun getCrimeZonesForMapNear(
+        location: LatLng,
+        maxDistanceKm: Double = 100.0,
+        maxResults: Int = 500
+    ): List<CrimeZoneData> {
+        return loadCrimeRiskZones()
+            .asSequence()
+            .filter { distanceKm(location, it.location) <= maxDistanceKm }
+            .sortedWith(compareByDescending<CrimeRiskZone> { it.crimeRiskScore }
+                .thenBy { distanceKm(location, it.location) })
+            .take(maxResults)
+            .map { zone ->
+                CrimeZoneData(
+                    lat = zone.location.latitude,
+                    lng = zone.location.longitude,
+                    radiusMeters = zone.radiusMeters.toDouble(),
+                    crimeRiskScore = zone.crimeRiskScore
+                )
+            }
+            .toList()
+    }
+
     companion object {
+        private const val MASTER_DATASET_ASSET = "master_dataset.csv"
+
         fun distanceMeters(p1: LatLng, p2: LatLng): Float {
             val earthRadius = 6371000.0
             val dLat = Math.toRadians(p2.latitude - p1.latitude)
@@ -454,6 +544,95 @@ class RiskZoneRepository(private val context: Context) {
             return distanceMeters(p1, p2).toDouble() / 1000.0
         }
     }
+}
+
+private data class MasterRiskRow(
+    val segmentId: String,
+    val region: String,
+    val subRegion: String,
+    val start: LatLng,
+    val end: LatLng,
+    val roadType: String,
+    val crimeType: String,
+    val crimeCount: Int,
+    val crimeScore: Float,
+    val timeSlot: String,
+    val weekday: String,
+    val crowdDensity: Int,
+    val lightingScore: Int,
+    val policeDistanceKm: Float,
+    val weather: String,
+    val transitHub: Boolean,
+    val riskScore: Float,
+    val riskLabel: String
+) {
+    private val midpoint: LatLng
+        get() = LatLng(
+            (start.latitude + end.latitude) / 2.0,
+            (start.longitude + end.longitude) / 2.0
+        )
+
+    fun toCrimeRiskZone(): CrimeRiskZone {
+        val segmentLength = RiskZoneRepository.distanceMeters(start, end)
+        val radius = (segmentLength / 4f).coerceIn(700f, 6_000f)
+        val violent = if (crimeType in VIOLENT_CRIMES) crimeCount else 0
+        return CrimeRiskZone(
+            city = subRegion,
+            state = region,
+            location = midpoint,
+            totalCrimes = crimeCount,
+            violentCrimes = violent,
+            crimeRiskScore = riskScore,
+            violentCrimeRatio = if (crimeCount > 0) violent.toFloat() / crimeCount else 0f,
+            radiusMeters = radius,
+            dominantCrimes = listOf(crimeType, roadType, timeSlot).filter { it.isNotBlank() },
+            hotspots = listOf(
+                CrimeHotspot(start, crimeScore.coerceIn(0f, 1f), "$crimeType start - $segmentId"),
+                CrimeHotspot(end, riskScore, "$crimeType end - $segmentId")
+            )
+        )
+    }
+
+    fun toDisasterRiskZone(): DisasterRiskZone? {
+        val weatherText = weather.lowercase()
+        val floodRisk = when {
+            "flood" in weatherText -> riskScore
+            "rain" in weatherText || "storm" in weatherText -> riskScore * 0.65f
+            else -> 0f
+        }.coerceIn(0f, 1f)
+        val landslideRisk = when {
+            "landslide" in weatherText -> riskScore
+            roadType.contains("ghat", ignoreCase = true) ||
+                roadType.contains("hill", ignoreCase = true) -> riskScore * 0.55f
+            else -> 0f
+        }.coerceIn(0f, 1f)
+
+        if (floodRisk < 0.4f && landslideRisk < 0.4f) return null
+
+        return DisasterRiskZone(
+            city = subRegion,
+            state = region,
+            location = midpoint,
+            landslideRisk = landslideRisk,
+            floodRisk = floodRisk,
+            earthquakeFrequency = 0,
+            avgRainfall = if (floodRisk > 0f) floodRisk * 100f else 0f,
+            elevation = 0,
+            radiusMeters = 3_000f,
+            riskFactors = listOfNotNull(
+                weather.takeIf { it.isNotBlank() },
+                roadType.takeIf { it.isNotBlank() }
+            )
+        )
+    }
+
+    companion object {
+        private val VIOLENT_CRIMES = setOf("Assault", "Homicide", "Rape", "Robbery")
+    }
+}
+
+private fun LatLng.isLikelyIndiaCoordinate(): Boolean {
+    return latitude in 6.0..37.5 && longitude in 68.0..98.5
 }
 
 // --- JSON parsing models ---
