@@ -4,14 +4,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
@@ -28,14 +37,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.lifecycleScope
@@ -279,14 +292,18 @@ private fun AppDrawer(
     currentRoute: String,
     onDestinationSelected: (String) -> Unit
 ) {
-    val destinations = remember {
+    val primaryDestinations = remember {
         listOf(
             DrawerDestination("home", "Home", Icons.Default.Home),
             DrawerDestination("safe_routes", "Safe Routes", Icons.Default.Route),
             DrawerDestination("journey_timeline", "Journey Timeline", Icons.Default.Timeline),
             DrawerDestination("companion_journey", "Companion Journey", Icons.Default.Shield),
             DrawerDestination("risk_map", "Risk Map", Icons.Default.Map),
-            DrawerDestination("advanced_safety", "Advanced Safety", Icons.Default.Shield),
+            DrawerDestination("advanced_safety", "Advanced Safety", Icons.Default.Shield)
+        )
+    }
+    val supportDestinations = remember {
+        listOf(
             DrawerDestination("logs", "Event Logs", Icons.Default.History),
             DrawerDestination("settings", "Settings", Icons.Default.Settings),
             DrawerDestination("permission_health", "Permission Health", Icons.Default.CheckCircle),
@@ -296,45 +313,151 @@ private fun AppDrawer(
 
     ModalDrawerSheet(
         modifier = Modifier
-            .width(304.dp)
-            .widthIn(max = 340.dp)
+            .width(300.dp)
+            .widthIn(max = 320.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Icon(
-                imageVector = Icons.Default.Shield,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(34.dp)
-            )
-            Spacer(modifier = Modifier.size(10.dp))
-            Text(
-                text = "SafePulse",
-                style = MaterialTheme.typography.titleLarge
-            )
-            Text(
-                text = "Commute and safety tools",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f))
+                    .padding(16.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Shield,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "SafePulse",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Commute safety suite",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-        HorizontalDivider()
+                Spacer(modifier = Modifier.height(14.dp))
 
-        destinations.forEach { destination ->
-            NavigationDrawerItem(
-                selected = currentRoute == destination.route,
-                onClick = { onDestinationSelected(destination.route) },
-                icon = {
-                    Icon(
-                        imageVector = destination.icon,
-                        contentDescription = null
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.45f))
+                        .padding(horizontal = 12.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(com.safepulse.ui.theme.SafeGreen)
                     )
-                },
-                label = { Text(destination.title) },
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    Text(
+                        text = "Ready to monitor",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            DrawerSectionTitle("Navigation")
+            primaryDestinations.forEach { destination ->
+                SafePulseDrawerItem(
+                    destination = destination,
+                    selected = currentRoute == destination.route,
+                    onClick = { onDestinationSelected(destination.route) }
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp))
+
+            DrawerSectionTitle("Support")
+            supportDestinations.forEach { destination ->
+                SafePulseDrawerItem(
+                    destination = destination,
+                    selected = currentRoute == destination.route,
+                    onClick = { onDestinationSelected(destination.route) }
+                )
+            }
+
+            Text(
+                text = "SafePulse v1.0",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 24.dp)
             )
         }
     }
+}
+
+@Composable
+private fun DrawerSectionTitle(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+        modifier = Modifier.padding(start = 24.dp, top = 6.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+private fun SafePulseDrawerItem(
+    destination: DrawerDestination,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    NavigationDrawerItem(
+        selected = selected,
+        onClick = onClick,
+        icon = {
+            Icon(
+                imageVector = destination.icon,
+                contentDescription = null,
+                modifier = Modifier.size(22.dp)
+            )
+        },
+        label = {
+            Text(
+                text = destination.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            )
+        },
+        shape = RoundedCornerShape(14.dp),
+        colors = NavigationDrawerItemDefaults.colors(
+            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            selectedTextColor = MaterialTheme.colorScheme.onSurface,
+            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+        ),
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 1.dp)
+    )
 }
 
 private data class DrawerDestination(
