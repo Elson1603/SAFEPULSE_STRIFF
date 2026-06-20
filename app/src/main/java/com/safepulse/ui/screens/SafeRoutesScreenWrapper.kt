@@ -44,18 +44,9 @@ fun SafeRoutesScreenWrapper(
         factory = SafeRoutesViewModelFactory(safeRoutesRepository, vehicleRecommender, riskZoneRepository)
     )
     
-    // Load nearby safety places (police stations + hospitals) for the map
-    // Pre-filter to 30km radius from default location; SafeRoutesScreen also filters at draw time
-    val safetyPlaces = remember {
-        riskZoneRepository.getSafetyPlacesNear(
-            com.google.android.gms.maps.model.LatLng(28.6139, 77.2090), 30.0
-        )
-    }
-    
     SafeRoutesScreenWithMap(
         viewModel = viewModel,
         onNavigateBack = onBack,
-        safetyPlaces = safetyPlaces,
         onStartCommuteNavigation = { destination, route ->
             SafetyForegroundService.start(application)
             scope.launch {

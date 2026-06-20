@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -25,12 +26,9 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
-import com.safepulse.domain.riskmap.SafetyPlace
-import com.safepulse.domain.riskmap.SafetyPlaceType
 import com.safepulse.domain.saferoutes.*
 import com.safepulse.ui.components.DestinationSearchDialogNew
 import com.safepulse.ui.map.*
-import kotlinx.coroutines.launch
 
 /**
  * Safe Routes screen with Leaflet map integration
@@ -40,17 +38,11 @@ import kotlinx.coroutines.launch
 fun SafeRoutesScreenWithMap(
     viewModel: SafeRoutesViewModel,
     onNavigateBack: () -> Unit,
-    safetyPlaces: List<SafetyPlace> = emptyList(),
     onStartCommuteNavigation: (LatLng, SafeRoute?) -> Unit = { _, _ -> }
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val uiState by viewModel.uiState.collectAsState()
     val currentLocation by viewModel.currentLocation.collectAsState()
-    val selectedRoute by viewModel.selectedRoute.collectAsState()
-    val policeStations by viewModel.policeStations.collectAsState()
-    val hospitals by viewModel.hospitals.collectAsState()
-    val safeZones by viewModel.safeZones.collectAsState()
     val crimeZonesForMap by viewModel.crimeZonesForMap.collectAsState()
     val destination by viewModel.destination.collectAsState()
     
@@ -89,9 +81,8 @@ fun SafeRoutesScreenWithMap(
     }
     
     // Update map when routes change — show only safest route via OSRM with crime zone analysis
-    LaunchedEffect(uiState, safetyPlaces, mapController, destination) {
+    LaunchedEffect(uiState, mapController, destination) {
         val ctrl = mapController ?: return@LaunchedEffect
-        val markers = mutableListOf<MarkerData>()
         val boundsPoints = mutableListOf<LatLng>()
 
         // Find the safest route (recommended or lowest risk)
@@ -106,30 +97,10 @@ fun SafeRoutesScreenWithMap(
             }
         }
 
-        // Safety place markers
-        val center = currentLocation ?: LatLng(28.6139, 77.2090)
-        safetyPlaces.filter { place ->
-            val dist = floatArrayOf(0f)
-            android.location.Location.distanceBetween(
-                center.latitude, center.longitude,
-                place.location.latitude, place.location.longitude, dist
-            )
-            dist[0] <= 30_000f
-        }.forEach { place ->
-            val (emoji, bgColor) = when (place.type) {
-                SafetyPlaceType.POLICE -> "\uD83D\uDE94" to "#1565C0"
-                SafetyPlaceType.HOSPITAL -> "\uD83C\uDFE5" to "#D32F2F"
-            }
-            markers.add(MarkerData(
-                place.location.latitude, place.location.longitude,
-                "$emoji ${place.name}", "", bgColor, emoji, bgColor
-            ))
-        }
-
         ctrl.batchUpdate(MapUpdateData(
             clear = true,
             currentLocation = currentLocation?.let { it.latitude to it.longitude },
-            markers = markers,
+            markers = emptyList(),
             fitBoundsPoints = if (boundsPoints.size >= 2) boundsPoints else null
         ))
 
@@ -144,30 +115,6 @@ fun SafeRoutesScreenWithMap(
         }
     }
 
-    // Load all-India police stations as persistent layer
-    LaunchedEffect(policeStations, mapController) {
-        val ctrl = mapController ?: return@LaunchedEffect
-        if (policeStations.isNotEmpty()) {
-            ctrl.addPoliceStations(policeStations)
-        }
-    }
-
-    // Load all-India hospitals as persistent layer
-    LaunchedEffect(hospitals, mapController) {
-        val ctrl = mapController ?: return@LaunchedEffect
-        if (hospitals.isNotEmpty()) {
-            ctrl.addHospitals(hospitals)
-        }
-    }
-
-    // Load all-India safe zones as persistent layer
-    LaunchedEffect(safeZones, mapController) {
-        val ctrl = mapController ?: return@LaunchedEffect
-        if (safeZones.isNotEmpty()) {
-            ctrl.addSafeZones(safeZones)
-        }
-    }
-    
     Scaffold(
         topBar = {
             TopAppBar(
@@ -329,16 +276,6 @@ fun SafestRoutePanel(
     ) {
         VehicleRecommendationCard(vehicleRecommendation)
 
-        Text(
-            text = "Safest Route",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold
-        )
-
-        route?.let {
-            RouteCard(route = it, isSelected = true)
-        }
-
         Button(
             onClick = {
                 routeDestination?.let { onStartCommuteNavigation(it, route) }
@@ -355,118 +292,75 @@ fun SafestRoutePanel(
 }
 
 @Composable
-fun RouteCard(
-    route: SafeRoute,
-    isSelected: Boolean,
-    onClick: (() -> Unit)? = null
-) {
-    val colors = CardDefaults.cardColors(
-        containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
-        else MaterialTheme.colorScheme.surface
-    )
-
-    val content: @Composable ColumnScope.() -> Unit = {
-        Column(
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (route.isRecommended) "✅ ${route.summary}" else route.summary,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = if (route.isRecommended) FontWeight.Bold else FontWeight.Normal
-                )
-                RiskBadge(route.riskLevel)
-            }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(
-                    text = "${String.format("%.1f", route.distance / 1000f)} km",
-                    style = MaterialTheme.typography.bodySmall
-                )
-                Text(
-                    text = "${route.duration / 60} min",
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-        }
-    }
-
-    if (onClick != null) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = onClick,
-            colors = colors,
-            content = content
-        )
-    } else {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = colors,
-            content = content
-        )
-    }
-}
-
-@Composable
-fun RiskBadge(riskLevel: RiskLevel) {
-    val color = when (riskLevel) {
-        RiskLevel.LOW -> Color(0xFF4CAF50)
-        RiskLevel.MEDIUM -> Color(0xFFFF9800)
-        RiskLevel.HIGH -> Color(0xFFF44336)
-    }
-    
-    val icon = when (riskLevel) {
-        RiskLevel.LOW -> "🟢"
-        RiskLevel.MEDIUM -> "🟠"
-        RiskLevel.HIGH -> "🔴"
-    }
-    
-    Surface(
-        shape = RoundedCornerShape(8.dp),
-        color = color.copy(alpha = 0.2f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(icon, style = MaterialTheme.typography.labelSmall)
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-                text = riskLevel.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = color
-            )
-        }
-    }
-}
-
-@Composable
 fun VehicleRecommendationCard(recommendation: VehicleRecommendation) {
+    val accent = when (recommendation.vehicle) {
+        RecommendedVehicle.AVOID_TRAVEL -> MaterialTheme.colorScheme.error
+        RecommendedVehicle.TRACKED_CAB -> Color(0xFF42A5F5)
+        RecommendedVehicle.AUTO_RICKSHAW -> Color(0xFFFFB74D)
+        RecommendedVehicle.BIKE_TAXI -> Color(0xFFAB47BC)
+        RecommendedVehicle.PUBLIC_BUS -> Color(0xFF2E7D32)
+        RecommendedVehicle.WALK -> Color(0xFF43A047)
+    }
+    val icon = when (recommendation.vehicle) {
+        RecommendedVehicle.AVOID_TRAVEL -> Icons.Default.Warning
+        RecommendedVehicle.TRACKED_CAB -> Icons.Default.LocalTaxi
+        RecommendedVehicle.AUTO_RICKSHAW -> Icons.Default.ElectricRickshaw
+        RecommendedVehicle.BIKE_TAXI -> Icons.Default.TwoWheeler
+        RecommendedVehicle.PUBLIC_BUS -> Icons.Default.DirectionsBus
+        RecommendedVehicle.WALK -> Icons.Default.DirectionsWalk
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        border = BorderStroke(1.dp, accent.copy(alpha = 0.45f)),
+        shape = RoundedCornerShape(12.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "🚗 ${recommendation.vehicle.displayName}",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = recommendation.reason,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Surface(
+                modifier = Modifier.size(44.dp),
+                shape = RoundedCornerShape(10.dp),
+                color = accent.copy(alpha = 0.16f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = accent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Recommended Transport",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = recommendation.vehicle.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = recommendation.reason,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

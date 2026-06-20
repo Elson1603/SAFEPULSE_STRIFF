@@ -143,17 +143,100 @@
         .route-info-title { font-weight: bold; font-size: 13px; margin-bottom: 4px; }
         .route-info-detail { color: #333; }
         .safe-route-info {
-            background: rgba(255,255,255,0.95);
-            border-radius: 10px;
-            padding: 10px 14px;
-            font-size: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-            line-height: 1.6;
-            border-left: 4px solid #4CAF50;
+            min-width: 196px;
+            max-width: 240px;
+            background: rgba(255,255,255,0.96);
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 14px;
+            padding: 12px;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #111827;
+            box-shadow: 0 14px 34px rgba(15,23,42,0.22);
+            line-height: 1.35;
+            backdrop-filter: blur(10px);
         }
-        .safe-route-info .risk-low { color: #4CAF50; font-weight: bold; }
-        .safe-route-info .risk-med { color: #FF9800; font-weight: bold; }
-        .safe-route-info .risk-high { color: #F44336; font-weight: bold; }
+        .safe-route-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .safe-route-check {
+            width: 30px;
+            height: 30px;
+            border-radius: 999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #16A34A;
+            color: #fff;
+            font-size: 17px;
+            font-weight: 800;
+            box-shadow: 0 0 0 4px rgba(22,163,74,0.14);
+            flex: 0 0 auto;
+        }
+        .safe-route-label {
+            color: #6B7280;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+        .safe-route-title {
+            color: #111827;
+            font-size: 14px;
+            font-weight: 800;
+        }
+        .safe-route-risk-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #4B5563;
+            font-size: 12px;
+            font-weight: 650;
+        }
+        .safe-route-risk {
+            border-radius: 999px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+        .safe-route-info .risk-low { background: rgba(22,163,74,0.12); color: #15803D; }
+        .safe-route-info .risk-med { background: rgba(245,158,11,0.14); color: #B45309; }
+        .safe-route-info .risk-high { background: rgba(220,38,38,0.12); color: #B91C1C; }
+        .safe-route-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .safe-route-metric {
+            border: 1px solid rgba(15,23,42,0.08);
+            border-radius: 10px;
+            background: rgba(249,250,251,0.84);
+            padding: 7px 8px;
+        }
+        .safe-route-metric-label {
+            color: #6B7280;
+            display: block;
+            font-size: 10px;
+            font-weight: 750;
+            margin-bottom: 2px;
+        }
+        .safe-route-metric-value {
+            color: #111827;
+            display: block;
+            font-size: 13px;
+            font-weight: 800;
+        }
+        .safe-route-meta {
+            color: #6B7280;
+            font-size: 11px;
+            font-weight: 650;
+        }
     </style>
 </head>
 <body>
@@ -703,10 +786,16 @@
                         var riskLabel = safest.riskScore < 0.3 ? 'LOW RISK' :
                                         safest.riskScore < 0.6 ? 'MEDIUM RISK' : 'HIGH RISK';
                         div.innerHTML =
-                            '<div class="route-info-title">\u2705 Safest Route</div>' +
-                            '<div class="route-info-detail">Safety: <span class="' + riskClass + '">' + riskLabel + ' (' + (safest.riskScore * 100).toFixed(0) + '%)</span></div>' +
-                            '<div class="route-info-detail">\uD83D\uDCCF ' + safest.distanceKm.toFixed(1) + ' km &nbsp; \u23F1\uFE0F ' + safest.durationMin + ' min</div>' +
-                            (scored.length > 1 ? '<div class="route-info-detail" style="font-size:10px;color:#888;margin-top:4px;">' + scored.length + ' routes analyzed</div>' : '');
+                            '<div class="safe-route-header">' +
+                            '<span class="safe-route-check">&#10003;</span>' +
+                            '<div><div class="safe-route-label">Safest Route</div><div class="safe-route-title">Recommended path</div></div>' +
+                            '</div>' +
+                            '<div class="safe-route-risk-row"><span>Safety score</span><span class="safe-route-risk ' + riskClass + '">' + riskLabel + ' ' + (safest.riskScore * 100).toFixed(0) + '%</span></div>' +
+                            '<div class="safe-route-metrics">' +
+                            '<div class="safe-route-metric"><span class="safe-route-metric-label">Distance</span><span class="safe-route-metric-value">' + safest.distanceKm.toFixed(1) + ' km</span></div>' +
+                            '<div class="safe-route-metric"><span class="safe-route-metric-label">Time</span><span class="safe-route-metric-value">' + safest.durationMin + ' min</span></div>' +
+                            '</div>' +
+                            (scored.length > 1 ? '<div class="safe-route-meta">' + scored.length + ' routes analyzed</div>' : '');
                         return div;
                     };
                     routeInfoControl.addTo(map);
