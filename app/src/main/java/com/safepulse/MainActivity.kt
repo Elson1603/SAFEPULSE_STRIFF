@@ -57,6 +57,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.safepulse.data.prefs.UserPreferences
+import com.safepulse.domain.journey.JourneySessionStatus
 import com.safepulse.service.BatteryDeadModeManager
 import com.safepulse.ui.journey.JourneyTimelineScreen
 import com.safepulse.ui.journey.CompanionJourneyScreen
@@ -175,8 +176,12 @@ fun MainNavigation() {
     val scope = rememberCoroutineScope()
     val batteryDeadModeManager = remember(context) { BatteryDeadModeManager.getInstance(context) }
     val batteryDeadState by batteryDeadModeManager.state.collectAsState()
+    val homeState by homeViewModel.state.collectAsState()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route ?: "home"
+    val companionJourneyAvailable =
+        homeState.journeyState.activeSession?.status == JourneySessionStatus.ACTIVE ||
+            homeState.companionJourneyState.liveSession?.status == JourneySessionStatus.ACTIVE
 
     fun navigateTo(route: String) {
         scope.launch { drawerState.close() }
@@ -196,6 +201,7 @@ fun MainNavigation() {
         drawerContent = {
             AppDrawer(
                 currentRoute = currentRoute,
+                showCompanionJourney = companionJourneyAvailable,
                 onDestinationSelected = ::navigateTo
             )
         }
@@ -273,7 +279,8 @@ fun MainNavigation() {
 
                 composable("companion_journey") {
                     CompanionJourneyScreen(
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        viewModel = homeViewModel
                     )
                 }
             }
@@ -290,17 +297,22 @@ fun MainNavigation() {
 @Composable
 private fun AppDrawer(
     currentRoute: String,
+    showCompanionJourney: Boolean,
     onDestinationSelected: (String) -> Unit
 ) {
-    val primaryDestinations = remember {
+    val primaryDestinations = remember(showCompanionJourney) {
         listOf(
             DrawerDestination("home", "Home", Icons.Default.Home),
             DrawerDestination("safe_routes", "Safe Routes", Icons.Default.Route),
             DrawerDestination("journey_timeline", "Journey Timeline", Icons.Default.Timeline),
-            DrawerDestination("companion_journey", "Companion Journey", Icons.Default.Shield),
+            if (showCompanionJourney) {
+                DrawerDestination("companion_journey", "Guardian Dashboard", Icons.Default.Shield)
+            } else {
+                null
+            },
             DrawerDestination("risk_map", "Risk Map", Icons.Default.Map),
             DrawerDestination("advanced_safety", "Advanced Safety", Icons.Default.Shield)
-        )
+        ).filterNotNull()
     }
     val supportDestinations = remember {
         listOf(

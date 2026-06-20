@@ -146,16 +146,48 @@ class JourneyShareManager(
         return shareToken
     }
 
-    suspend fun shareActiveJourneyViaWhatsAppAndSms(
+    suspend fun sendJourneyStartedSms(
+        targetContactIds: Set<Long> = emptySet()
+    ): Boolean {
+        val liveSession = ensureLiveSessionForActiveJourney() ?: return false
+        val shareToken = _state.value.shareToken ?: buildShareToken(liveSession.sessionId)
+        val contacts = resolveContacts(targetContactIds)
+        if (contacts.isEmpty()) return false
+
+        val message = buildJourneyStartedMessage(liveSession, shareToken)
+        val sent = emergencyManager.sendJourneyStatusMessages(contacts, message)
+        if (sent) {
+            _state.value = _state.value.copy(
+                liveSession = liveSession.copy(sharedContactIds = contacts.map { it.id }.toSet()),
+                shareToken = shareToken
+            )
+            lastPeriodicStatusUpdateAt = System.currentTimeMillis()
+            appendJourneyEvent("Journey Start SMS Sent", "Journey start SMS sent to ${contacts.size} emergency contact(s)")
+        }
+        return sent
+    }
+
+    suspend fun shareActiveJourneyViaWhatsApp(
         targetContactIds: Set<Long> = emptySet()
     ): JourneyShareToken? {
         val liveSession = ensureLiveSessionForActiveJourney() ?: return null
-        val shareToken = shareJourney(targetContactIds) ?: return null
+        val shareToken = _state.value.shareToken ?: buildShareToken(liveSession.sessionId)
+        val contacts = resolveContacts(targetContactIds)
+        _state.value = _state.value.copy(
+            liveSession = liveSession.copy(
+                sharedContactIds = contacts.map { it.id }.toSet().ifEmpty { liveSession.sharedContactIds }
+            ),
+            shareToken = shareToken
+        )
         openWhatsAppShare(buildShareMessage(liveSession, shareToken))
         lastPeriodicStatusUpdateAt = System.currentTimeMillis()
         appendJourneyEvent("Journey Shared via WhatsApp", "WhatsApp share sheet opened")
         return shareToken
     }
+
+    suspend fun shareActiveJourneyViaWhatsAppAndSms(
+        targetContactIds: Set<Long> = emptySet()
+    ): JourneyShareToken? = shareActiveJourneyViaWhatsApp(targetContactIds)
 
     suspend fun completeJourney() {
         finishJourney(JourneySessionStatus.COMPLETED, "Journey completed")
@@ -534,6 +566,24 @@ class JourneyShareManager(
         }
     }
 
+    private fun buildJourneyStartedMessage(session: LiveJourneySession, token: JourneyShareToken): String {
+        val startedText = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
+            .format(java.util.Date(session.startTime))
+        val locationText = _state.value.lastKnownLocation?.let {
+            "Current location: https://maps.google.com/?q=${it.latitude},${it.longitude}"
+        } ?: "Current location: waiting for GPS"
+
+        return buildString {
+            appendLine("SafePulse journey started")
+            appendLine("Started: $startedText")
+            appendLine("Destination: ${session.destination}")
+            appendLine("Risk score: ${_state.value.currentRiskScore}")
+            appendLine(locationText)
+            appendLine("Journey ID: ${token.token}")
+            appendLine("Live link: ${token.link}")
+        }
+    }
+
     private fun buildCheckInMessage(checkIn: JourneyCheckIn): String {
         return buildString {
             appendLine("SafePulse check-in requested")
@@ -584,26 +634,21 @@ class JourneyShareManager(
     }
 
     private fun openWhatsAppShare(message: String) {
-        val whatsappIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            setPackage("com.whatsapp")
-            putExtra(Intent.EXTRA_TEXT, message)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-
-        runCatching {
-            context.startActivity(whatsappIntent)
-        }.onFailure {
-            val chooser = Intent.createChooser(
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, message)
-                },
-                "Share Journey"
-            ).apply {
+        val opened = listOf("com.whatsapp", "com.whatsapp.w4b").any { packageName ->
+            val whatsappIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                setPackage(packageName)
+                putExtra(Intent.EXTRA_TEXT, message)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            runCatching { context.startActivity(chooser) }
+
+            runCatching {
+                context.startActivity(whatsappIntent)
+            }.isSuccess
+        }
+
+        if (!opened) {
+            android.util.Log.w("JourneyShareManager", "WhatsApp is not installed; journey share was not opened")
         }
     }
 

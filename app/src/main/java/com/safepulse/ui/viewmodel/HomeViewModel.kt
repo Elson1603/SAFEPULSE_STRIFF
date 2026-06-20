@@ -305,6 +305,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 userPreferences.setServiceEnabled(true)
             }
             journeySessionManager.startJourney(destination)
+            journeyShareManager.sendJourneyStartedSms()
         }
     }
 
@@ -315,19 +316,19 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 userPreferences.setServiceEnabled(true)
             }
             journeyShareManager.startLiveJourney(destination, durationMinutes)
-            journeyShareManager.shareJourney()
+            journeyShareManager.sendJourneyStartedSms()
         }
     }
 
     fun shareCompanionJourney(targetContactIds: Set<Long> = emptySet()) {
         viewModelScope.launch {
-            journeyShareManager.shareJourney(targetContactIds)
+            journeyShareManager.shareActiveJourneyViaWhatsApp(targetContactIds)
         }
     }
 
     fun shareActiveSafeJourney(targetContactIds: Set<Long> = emptySet()) {
         viewModelScope.launch {
-            journeyShareManager.shareActiveJourneyViaWhatsAppAndSms(targetContactIds)
+            journeyShareManager.shareActiveJourneyViaWhatsApp(targetContactIds)
         }
     }
 
