@@ -53,7 +53,6 @@ class SafetyForegroundService : LifecycleService(), SensorEventListener {
     private lateinit var voiceTriggerModule: VoiceTriggerModule
     private lateinit var shakeDetector: ShakeDetector
     private lateinit var confirmationService: EmergencyConfirmationService
-    private lateinit var volumeButtonEmergencyTrigger: VolumeButtonEmergencyTrigger
     private lateinit var journeyTrackingService: JourneyTrackingService
     private lateinit var journeyShareManager: JourneyShareManager
     
@@ -169,13 +168,6 @@ class SafetyForegroundService : LifecycleService(), SensorEventListener {
             Log.d("SafetyService", "Emergency confirmation service initialized")
         }
 
-        volumeButtonEmergencyTrigger = VolumeButtonEmergencyTrigger(
-            context = this@SafetyForegroundService,
-            scope = serviceScope,
-            onTripleVolumeUp = { handleVolumeButtonEmergency() },
-            onTripleVolumeDown = { handleVolumeButtonCancel() }
-        )
-
         journeyTrackingService = JourneyTrackingService(
             context = applicationContext,
             locationTracker = locationTracker,
@@ -242,7 +234,6 @@ class SafetyForegroundService : LifecycleService(), SensorEventListener {
         // Start location tracking
         locationTracker.startTracking(SafetyMode.NORMAL)
         journeyTrackingService.start()
-        volumeButtonEmergencyTrigger.start()
         
         // Register sensor listeners
         val sensorDelay = SafetyConstants.SENSOR_DELAY_NORMAL_US
@@ -324,7 +315,6 @@ class SafetyForegroundService : LifecycleService(), SensorEventListener {
         locationTracker.stopTracking()
         sensorManager.unregisterListener(this)
         voiceTriggerModule.stopListening()
-        volumeButtonEmergencyTrigger.stop()
         countdownJob?.cancel()
         journeyTrackingService.stop()
     }
@@ -410,38 +400,6 @@ class SafetyForegroundService : LifecycleService(), SensorEventListener {
         safetyEngine.clearEmergency()
     }
 
-    private fun handleVolumeButtonCancel() {
-        serviceScope.launch {
-            var cancelled = false
-
-            if (isEmergencyCountdownActive) {
-                cancelEmergencyCountdown()
-                cancelled = true
-            }
-
-            if (confirmationService.cancelFromHardwareShortcut()) {
-                cancelled = true
-            }
-
-            if (cancelled) {
-                shakeDetector.reset()
-                safetyFeatureManager.appendTimeline(
-                    title = "SOS cancelled",
-                    detail = "Triple volume-down shortcut used. Monitoring remains active.",
-                    location = locationTracker.currentLocation.value?.let {
-                        LatLng(it.latitude, it.longitude)
-                    },
-                    riskLevel = safetyEngine.safetyState.value.riskLevel,
-                    safetyMode = safetyEngine.safetyState.value.mode,
-                    eventType = "SOS_CANCELLED"
-                )
-                Log.i("SafetyService", "Emergency cancelled by triple volume-down")
-            } else {
-                Log.d("SafetyService", "Triple volume-down ignored because no SOS confirmation/countdown is active")
-            }
-        }
-    }
-
     fun cancelEmergencyWithPin(pin: String): PinVerificationResult {
         val result = safetyFeatureManager.handleCancelPin(
             pin = pin,
@@ -470,21 +428,6 @@ class SafetyForegroundService : LifecycleService(), SensorEventListener {
      */
     fun triggerSilentSOS() {
         safetyEngine.triggerSilentSOS()
-    }
-
-    private fun handleVolumeButtonEmergency() {
-        Log.i("SafetyService", "Triple volume-up detected - triggering SOS")
-        safetyFeatureManager.appendTimeline(
-            title = "Volume shortcut SOS triggered",
-            detail = "Triple volume-up emergency shortcut activated.",
-            location = locationTracker.currentLocation.value?.let {
-                LatLng(it.latitude, it.longitude)
-            },
-            riskLevel = safetyEngine.safetyState.value.riskLevel,
-            safetyMode = safetyEngine.safetyState.value.mode,
-            eventType = "SOS_TRIGGERED"
-        )
-        triggerManualSOS()
     }
     
     private fun executeEmergencyResponse(event: EmergencyEvent) {
