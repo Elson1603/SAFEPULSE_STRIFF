@@ -27,12 +27,13 @@ class AndroidSpeechVoiceTriggerModule(private val context: Context) : VoiceTrigg
     companion object {
         private const val TAG = "AndroidSpeechVoice"
         private const val RESTART_DELAY_MS = 1_500L
-        private const val QUIET_RESTART_DELAY_MS = 3_000L
+        private const val QUIET_RESTART_DELAY_MS = 2_000L
         private const val BUSY_RESTART_DELAY_MS = 4_000L
         private const val POST_DETECTION_COOLDOWN_MS = 4_000L
-        private const val COMPLETE_SILENCE_MS = 3_000L
-        private const val POSSIBLE_COMPLETE_SILENCE_MS = 1_500L
-        private const val MIN_SESSION_MS = 1_000L
+        private const val COMPLETE_SILENCE_MS = 2_500L
+        private const val POSSIBLE_COMPLETE_SILENCE_MS = 900L
+        private const val MIN_SESSION_MS = 700L
+        private const val MAX_RESULTS = 8
     }
 
     private val appContext = context.applicationContext
@@ -138,7 +139,9 @@ class AndroidSpeechVoiceTriggerModule(private val context: Context) : VoiceTrigg
 
             override fun onResults(results: Bundle?) {
                 handleRecognitionResults(
-                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty(),
+                    VoiceKeywordMatcher.prepareRecognitionResults(
+                        results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
+                    ),
                     partial = false
                 )
                 scheduleRestart(RESTART_DELAY_MS)
@@ -146,7 +149,9 @@ class AndroidSpeechVoiceTriggerModule(private val context: Context) : VoiceTrigg
 
             override fun onPartialResults(partialResults: Bundle?) {
                 handleRecognitionResults(
-                    partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty(),
+                    VoiceKeywordMatcher.prepareRecognitionResults(
+                        partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION).orEmpty()
+                    ),
                     partial = true
                 )
             }
@@ -203,9 +208,9 @@ class AndroidSpeechVoiceTriggerModule(private val context: Context) : VoiceTrigg
         return Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, appContext.packageName)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, preferredSpeechLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, preferredSpeechLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, MAX_RESULTS)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, false)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, COMPLETE_SILENCE_MS)
@@ -214,6 +219,15 @@ class AndroidSpeechVoiceTriggerModule(private val context: Context) : VoiceTrigg
                 POSSIBLE_COMPLETE_SILENCE_MS
             )
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, MIN_SESSION_MS)
+        }
+    }
+
+    private fun preferredSpeechLanguageTag(): String {
+        val locale = Locale.getDefault()
+        return if (locale.language.equals("en", ignoreCase = true) || locale.language.isBlank()) {
+            "en-IN"
+        } else {
+            locale.toLanguageTag()
         }
     }
 

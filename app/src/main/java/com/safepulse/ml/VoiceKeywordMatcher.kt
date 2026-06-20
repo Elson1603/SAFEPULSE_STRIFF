@@ -11,9 +11,9 @@ data class VoiceKeywordMatch(
 )
 
 /**
- * Shared phrase matcher for voice SOS and demo/testing flows.
- * Uses normalized word boundaries so words like "help" are detected clearly
- * without relying on loose substring checks.
+ * Shared phrase matcher for voice SOS, voice tests, and shake confirmation.
+ * It normalizes noisy speech-recognition text and scores phrase/token matches
+ * instead of relying on plain substring checks.
  */
 object VoiceKeywordMatcher {
     val supportedKeywords = listOf(
@@ -28,23 +28,87 @@ object VoiceKeywordMatcher {
     )
 
     private val phraseGroups = listOf(
-        "help" to listOf("help", "help me", "please help", "help please"),
-        "save me" to listOf("save me", "save my life", "please save me"),
-        "emergency" to listOf("emergency", "it is an emergency", "this is an emergency"),
-        "sos" to listOf("sos", "s o s", "send sos"),
-        "bachao" to listOf("bachao", "bachaao", "bachav", "bacha lo", "bachalo", "mujhe bachao", "बचाओ"),
-        "madad" to listOf("madad", "madad karo", "mujhe madad chahiye", "help chahiye", "मदद"),
-        "police" to listOf("police", "call police", "police bulao")
+        "help" to listOf("help", "help me", "please help", "help please", "need help", "i need help"),
+        "save me" to listOf("save me", "save my life", "please save me", "save me please"),
+        "emergency" to listOf("emergency", "it is an emergency", "this is an emergency", "i have emergency"),
+        "sos" to listOf("sos", "s o s", "send sos", "start sos", "trigger sos"),
+        "bachao" to listOf("bachao", "bachaao", "bachav", "bacha lo", "bachalo", "mujhe bachao", "mujhe bacha lo", "bachana"),
+        "madad" to listOf("madad", "madad karo", "mujhe madad chahiye", "help chahiye", "madad chahiye"),
+        "police" to listOf("police", "call police", "police bulao", "police ko bulao", "call the police")
+    )
+
+    private val cancelGroups = listOf(
+        "no" to listOf(
+            "no",
+            "nope",
+            "no no",
+            "cancel",
+            "cancel it",
+            "stop",
+            "stop it",
+            "false",
+            "negative",
+            "not emergency",
+            "not an emergency",
+            "no emergency",
+            "nahi",
+            "nahin",
+            "nai",
+            "mat karo"
+        )
+    )
+
+    private val confirmationGroups = listOf(
+        "yes" to listOf(
+            "yes",
+            "yes yes",
+            "yeah",
+            "yep",
+            "ya",
+            "haan",
+            "ha",
+            "hanji",
+            "yes help",
+            "need help",
+            "i need help",
+            "send help",
+            "emergency",
+            "start sos",
+            "trigger sos"
+        )
     )
 
     fun findBestMatch(results: List<String>, minConfidence: Float = 0.62f): VoiceKeywordMatch {
+        return findMatch(prepareRecognitionResults(results), phraseGroups, minConfidence)
+    }
+
+    fun containsCancelWord(results: List<String>): VoiceKeywordMatch {
+        return findMatch(prepareRecognitionResults(results), cancelGroups, minConfidence = 0.70f)
+    }
+
+    fun containsConfirmationWord(results: List<String>): VoiceKeywordMatch {
+        return findMatch(prepareRecognitionResults(results), confirmationGroups, minConfidence = 0.70f)
+    }
+
+    fun prepareRecognitionResults(results: List<String>): List<String> {
+        return results
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { normalize(it) }
+    }
+
+    private fun findMatch(
+        results: List<String>,
+        groups: List<Pair<String, List<String>>>,
+        minConfidence: Float
+    ): VoiceKeywordMatch {
         var bestMatch = VoiceKeywordMatch(false)
 
         results.forEachIndexed { index, text ->
             val normalized = normalize(text)
             if (normalized.isBlank()) return@forEachIndexed
 
-            phraseGroups.forEach { (keyword, phrases) ->
+            groups.forEach { (keyword, phrases) ->
                 phrases.forEach { phrase ->
                     val score = phraseScore(normalized, normalize(phrase), index)
                     if (score > bestMatch.confidence) {
@@ -62,35 +126,16 @@ object VoiceKeywordMatcher {
         return if (bestMatch.confidence >= minConfidence) {
             bestMatch.copy(matched = true)
         } else {
-            bestMatch.copy(matched = false, keyword = null)
+            VoiceKeywordMatch(false)
         }
-    }
-
-    fun containsCancelWord(results: List<String>): VoiceKeywordMatch {
-        val cancelGroups = listOf(
-            "no" to listOf("no", "nope", "cancel", "stop", "false", "negative", "nahi", "nahin", "नहीं")
-        )
-
-        results.forEachIndexed { index, text ->
-            val normalized = normalize(text)
-            cancelGroups.forEach { (keyword, phrases) ->
-                phrases.forEach { phrase ->
-                    val score = phraseScore(normalized, normalize(phrase), index)
-                    if (score >= 0.72f) {
-                        return VoiceKeywordMatch(true, keyword, score, text)
-                    }
-                }
-            }
-        }
-        return VoiceKeywordMatch(false)
     }
 
     private fun phraseScore(text: String, phrase: String, resultIndex: Int): Float {
         if (text.isBlank() || phrase.isBlank()) return 0f
-        val rankPenalty = (resultIndex * 0.04f).coerceAtMost(0.16f)
+        val rankPenalty = (resultIndex * 0.035f).coerceAtMost(0.14f)
 
         if (hasPhraseBoundary(text, phrase)) {
-            return 0.96f - rankPenalty
+            return 0.97f - rankPenalty
         }
 
         val textTokens = text.split(" ").filter { it.isNotBlank() }
@@ -98,23 +143,28 @@ object VoiceKeywordMatcher {
         if (phraseTokens.isEmpty()) return 0f
 
         val matchedTokens = phraseTokens.count { token ->
-            textTokens.any { candidate -> candidate == token || tokenSimilarity(candidate, token) >= 0.82f }
+            textTokens.any { candidate ->
+                candidate == token ||
+                    (token.length >= 3 && candidate.length >= 3 && candidate.startsWith(token)) ||
+                    (token.length >= 3 && candidate.length >= 3 && token.startsWith(candidate)) ||
+                    tokenSimilarity(candidate, token) >= 0.80f
+            }
         }
 
         val coverage = matchedTokens.toFloat() / phraseTokens.size
-        return (coverage * 0.76f) - rankPenalty
+        return (coverage * 0.78f) - rankPenalty
     }
 
     private fun hasPhraseBoundary(text: String, phrase: String): Boolean {
         return text == phrase ||
-                text.startsWith("$phrase ") ||
-                text.endsWith(" $phrase") ||
-                text.contains(" $phrase ")
+            text.startsWith("$phrase ") ||
+            text.endsWith(" $phrase") ||
+            text.contains(" $phrase ")
     }
 
     private fun tokenSimilarity(a: String, b: String): Float {
         if (a == b) return 1f
-        if (a.length < 3 || b.length < 3) return 0f
+        if (a.length < 2 || b.length < 2) return 0f
 
         val distance = levenshteinDistance(a, b)
         val maxLength = maxOf(a.length, b.length)
