@@ -141,7 +141,7 @@ class JourneyShareManager(
         _state.value = _state.value.copy(
             liveSession = liveSession.copy(sharedContactIds = contacts.map { it.id }.toSet()),
             shareToken = shareToken
-        )
+        )---
         appendJourneyEvent("Journey Shared", "Shared with ${contacts.size} trusted contact(s)")
         return shareToken
     }
