@@ -10,6 +10,7 @@ import com.safepulse.domain.journey.JourneyEventType
 import com.safepulse.domain.journey.JourneyLiveState
 import com.safepulse.domain.journey.JourneyMonitoringAlert
 import com.safepulse.domain.journey.JourneyPhase
+import com.safepulse.domain.journey.JourneySession
 import com.safepulse.domain.journey.JourneySessionStatus
 import com.safepulse.domain.journey.JourneyShareToken
 import com.safepulse.domain.journey.LiveJourneySession
@@ -150,6 +151,21 @@ class JourneyShareManager(
         targetContactIds: Set<Long> = emptySet()
     ): Boolean {
         val liveSession = ensureLiveSessionForActiveJourney() ?: return false
+        return sendJourneyStartedSmsForLiveSession(liveSession, targetContactIds)
+    }
+
+    suspend fun sendJourneyStartedSms(
+        journeySession: JourneySession,
+        targetContactIds: Set<Long> = emptySet()
+    ): Boolean {
+        val liveSession = ensureLiveSessionForJourney(journeySession)
+        return sendJourneyStartedSmsForLiveSession(liveSession, targetContactIds)
+    }
+
+    private suspend fun sendJourneyStartedSmsForLiveSession(
+        liveSession: LiveJourneySession,
+        targetContactIds: Set<Long>
+    ): Boolean {
         val shareToken = _state.value.shareToken ?: buildShareToken(liveSession.sessionId)
         val contacts = resolveContacts(targetContactIds)
         if (contacts.isEmpty()) return false
@@ -310,7 +326,12 @@ class JourneyShareManager(
     }
 
     private suspend fun finishJourney(status: JourneySessionStatus, reason: String) {
-        val current = _state.value.liveSession ?: return
+        val current = _state.value.liveSession ?: ensureLiveSessionForActiveJourney()
+        if (current == null) {
+            journeySessionManager.endJourney(status)
+            stopMonitoring()
+            return
+        }
         if (status == JourneySessionStatus.COMPLETED) {
             sendSafeArrivalUpdate(current)
         }
@@ -480,6 +501,46 @@ class JourneyShareManager(
         return liveSession
     }
 
+    private fun ensureLiveSessionForJourney(activeSession: JourneySession): LiveJourneySession {
+        val existing = _state.value.liveSession
+        if (existing?.sessionId == activeSession.sessionId &&
+            existing.status == JourneySessionStatus.ACTIVE
+        ) {
+            return existing
+        }
+
+        val now = System.currentTimeMillis()
+        val shareToken = buildShareToken(activeSession.sessionId)
+        val liveSession = LiveJourneySession(
+            sessionId = activeSession.sessionId,
+            userId = DEFAULT_USER_ID,
+            startTime = activeSession.startTime,
+            expectedArrivalTime = now + DEFAULT_SHARE_DURATION_MS,
+            destination = activeSession.destination ?: "Active Safe Journey",
+            status = JourneySessionStatus.ACTIVE,
+            currentRiskScore = activeSession.riskScore,
+            sharedContactIds = emptySet(),
+            shareToken = shareToken.token,
+            shareLink = shareToken.link
+        )
+
+        _state.value = _state.value.copy(
+            liveSession = liveSession,
+            currentPhase = activeSession.currentPhase,
+            currentRiskScore = activeSession.riskScore,
+            lastKnownLocation = locationProvider?.invoke(),
+            etaMillis = liveSession.expectedArrivalTime,
+            shareToken = shareToken,
+            monitoringLevel = 1
+        )
+        lastMovementAt = now
+        lastLocation = _state.value.lastKnownLocation
+        lastPeriodicStatusUpdateAt = 0L
+        startMonitoring()
+        appendJourneyEvent("Companion Monitoring Activated", "Trusted-contact sharing is active for the journey")
+        return liveSession
+    }
+
     private suspend fun maybePromptCheckIn(label: String) {
         if (_state.value.currentCheckIn != null) return
         requestCheckIn(label, timeoutMinutes = CHECK_IN_TIMEOUT_MS.toInt() / 60_000)
@@ -579,6 +640,7 @@ class JourneyShareManager(
             appendLine("Destination: ${session.destination}")
             appendLine("Risk score: ${_state.value.currentRiskScore}")
             appendLine(locationText)
+            appendLine("Updates: every 15 minutes until arrival or cancellation")
             appendLine("Journey ID: ${token.token}")
             appendLine("Live link: ${token.link}")
         }
@@ -619,6 +681,10 @@ class JourneyShareManager(
         location: LocationData?,
         status: String
     ): String {
+        val now = System.currentTimeMillis()
+        val elapsedMinutes = ((now - session.startTime) / 60_000L).coerceAtLeast(0L)
+        val etaText = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault())
+            .format(java.util.Date(session.expectedArrivalTime))
         val locationText = location?.let {
             "https://maps.google.com/?q=${it.latitude},${it.longitude}"
         } ?: "Location unavailable"
@@ -627,6 +693,8 @@ class JourneyShareManager(
             appendLine("SafePulse journey update")
             appendLine("Journey ID: ${session.shareToken}")
             appendLine("Destination: ${session.destination}")
+            appendLine("Elapsed: ${elapsedMinutes} min")
+            appendLine("ETA: $etaText")
             appendLine("Current status: $status")
             appendLine("Risk score: ${_state.value.currentRiskScore}")
             appendLine("Location: $locationText")

@@ -16,7 +16,6 @@ import com.safepulse.data.security.PinVerificationResult
 import com.safepulse.domain.model.RiskLevel
 import com.safepulse.domain.model.SafetyMode
 import com.safepulse.domain.journey.JourneySessionState
-import com.safepulse.domain.journey.JourneySessionStatus
 import com.safepulse.domain.journey.JourneyLiveState
 import com.safepulse.domain.saferoutes.DisasterAlert
 import com.safepulse.service.SafetyForegroundService
@@ -304,8 +303,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 SafetyForegroundService.start(app)
                 userPreferences.setServiceEnabled(true)
             }
-            journeySessionManager.startJourney(destination)
-            journeyShareManager.sendJourneyStartedSms()
+            val journey = journeySessionManager.startJourney(destination)
+            journeyShareManager.sendJourneyStartedSms(journey)
         }
     }
 
@@ -352,21 +351,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     fun completeSafeJourney() {
         viewModelScope.launch {
-            if (_state.value.companionJourneyState.liveSession?.status == JourneySessionStatus.ACTIVE) {
-                journeyShareManager.completeJourney()
-            } else {
-                journeySessionManager.endJourney(JourneySessionStatus.COMPLETED)
-            }
+            journeyShareManager.completeJourney()
         }
     }
 
     fun cancelSafeJourney() {
         viewModelScope.launch {
-            if (_state.value.companionJourneyState.liveSession?.status == JourneySessionStatus.ACTIVE) {
-                journeyShareManager.cancelJourney()
-            } else {
-                journeySessionManager.endJourney(JourneySessionStatus.CANCELLED)
-            }
+            journeyShareManager.cancelJourney()
         }
     }
 
