@@ -155,13 +155,13 @@ class RiskZoneRepository(private val context: Context) {
     }
 
     /**
-     * Load police stations from police_stations_india.json (3,704 OSM entries)
-     * and hospitals from emergency_services.json, combining into one list.
+     * Load police stations and hospitals from bundled OSM datasets.
      */
     fun loadSafetyPlaces(): List<SafetyPlace> {
         safetyPlacesCache?.let { return it }
 
         val places = mutableListOf<SafetyPlace>()
+        val seenPoliceKeys = mutableSetOf<String>()
 
         // Load police stations from the comprehensive OSM dataset
         try {
@@ -169,7 +169,25 @@ class RiskZoneRepository(private val context: Context) {
                 .bufferedReader().use { it.readText() }
             val policeType = object : TypeToken<List<PoliceStationJson>>() {}.type
             val policeStations: List<PoliceStationJson> = Gson().fromJson(policeJson, policeType)
-            places.addAll(policeStations.map { it.toDomain() })
+            policeStations.map { it.toDomain() }.forEach { place ->
+                seenPoliceKeys.add(place.dedupeKey())
+                places.add(place)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        // Merge additional police facilities from the GeoJSON export.
+        try {
+            val facilitiesJson = context.assets.open("emergency_facilities.geojson")
+                .bufferedReader().use { it.readText() }
+            val facilitiesType = object : TypeToken<EmergencyFacilitiesGeoJson>() {}.type
+            val facilities: EmergencyFacilitiesGeoJson = Gson().fromJson(facilitiesJson, facilitiesType)
+            facilities.features
+                .asSequence()
+                .mapIndexedNotNull { index, feature -> feature.toPolicePlace(index) }
+                .filter { seenPoliceKeys.add(it.dedupeKey()) }
+                .forEach { places.add(it) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -196,9 +214,24 @@ class RiskZoneRepository(private val context: Context) {
         location: LatLng,
         maxDistanceKm: Double = 50.0
     ): List<SafetyPlace> {
+        return getSafetyPlacesNear(location, maxDistanceKm, type = null)
+    }
+
+    fun getSafetyPlacesNear(
+        location: LatLng,
+        maxDistanceKm: Double,
+        type: SafetyPlaceType?,
+        maxResults: Int = Int.MAX_VALUE
+    ): List<SafetyPlace> {
         return loadSafetyPlaces()
-            .filter { distanceKm(location, it.location) <= maxDistanceKm }
-            .sortedBy { distanceKm(location, it.location) }
+            .asSequence()
+            .filter { type == null || it.type == type }
+            .map { place -> place to distanceKm(location, place.location) }
+            .filter { it.second <= maxDistanceKm }
+            .sortedBy { it.second }
+            .take(maxResults)
+            .map { it.first }
+            .toList()
     }
 
     /**
@@ -424,10 +457,7 @@ class RiskZoneRepository(private val context: Context) {
      * Get police stations near a location as PoliceStationData for the map layer
      */
     fun getPoliceStationsNear(location: LatLng, maxDistanceKm: Double = 30.0): List<PoliceStationData> {
-        return loadSafetyPlaces()
-            .filter { it.type == SafetyPlaceType.POLICE }
-            .filter { distanceKm(location, it.location) <= maxDistanceKm }
-            .sortedBy { distanceKm(location, it.location) }
+        return getSafetyPlacesNear(location, maxDistanceKm, SafetyPlaceType.POLICE)
             .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
@@ -453,10 +483,7 @@ class RiskZoneRepository(private val context: Context) {
      * Get hospitals near a location for map display
      */
     fun getHospitalsNear(location: LatLng, maxDistanceKm: Double = 50.0): List<HospitalData> {
-        return loadSafetyPlaces()
-            .filter { it.type == SafetyPlaceType.HOSPITAL }
-            .filter { distanceKm(location, it.location) <= maxDistanceKm }
-            .sortedBy { distanceKm(location, it.location) }
+        return getSafetyPlacesNear(location, maxDistanceKm, SafetyPlaceType.HOSPITAL)
             .map { HospitalData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
@@ -748,6 +775,53 @@ private data class HospitalJson(
     )
 }
 
+private data class EmergencyFacilitiesGeoJson(
+    val features: List<EmergencyFacilityFeature> = emptyList()
+)
+
+private data class EmergencyFacilityFeature(
+    val id: String? = null,
+    val properties: EmergencyFacilityProperties? = null,
+    val geometry: EmergencyFacilityGeometry? = null
+) {
+    fun toPolicePlace(index: Int): SafetyPlace? {
+        val props = properties ?: return null
+        if (!props.isPoliceFacility()) return null
+        val coordinates = geometry?.coordinates ?: return null
+        if (coordinates.size < 2) return null
+        val lng = coordinates[0]
+        val lat = coordinates[1]
+        if (!LatLng(lat, lng).isLikelyIndiaCoordinate()) return null
+
+        return SafetyPlace(
+            id = GEOJSON_POLICE_ID_OFFSET + stablePoliceId(id, props.name, index),
+            name = props.name?.takeIf { it.isNotBlank() } ?: "Police Station",
+            type = SafetyPlaceType.POLICE,
+            address = "",
+            phoneNumber = "",
+            location = LatLng(lat, lng),
+            city = ""
+        )
+    }
+}
+
+private data class EmergencyFacilityProperties(
+    val amenity: String? = null,
+    val name: String? = null,
+    val police: String? = null
+) {
+    fun isPoliceFacility(): Boolean {
+        return amenity.equals("police", ignoreCase = true) ||
+                police.equals("station", ignoreCase = true) ||
+                police.equals("checkpoint", ignoreCase = true)
+    }
+}
+
+private data class EmergencyFacilityGeometry(
+    val type: String? = null,
+    val coordinates: List<Double> = emptyList()
+)
+
 private data class DisasterRiskZoneJson(
     val city: String,
     val state: String,
@@ -774,3 +848,18 @@ private data class DisasterRiskZoneJson(
         riskFactors = riskFactors
     )
 }
+
+private fun SafetyPlace.dedupeKey(): String {
+    val roundedLat = "%.5f".format(location.latitude)
+    val roundedLng = "%.5f".format(location.longitude)
+    return "${type.name}:${name.lowercase().trim()}:$roundedLat:$roundedLng"
+}
+
+private fun stablePoliceId(rawId: String?, name: String?, index: Int): Long {
+    val digits = rawId?.filter { it.isDigit() }?.toLongOrNull()
+    if (digits != null) return digits
+    val hash = "${rawId.orEmpty()}|${name.orEmpty()}|$index".hashCode().toLong()
+    return abs(hash)
+}
+
+private const val GEOJSON_POLICE_ID_OFFSET = 9_000_000_000L

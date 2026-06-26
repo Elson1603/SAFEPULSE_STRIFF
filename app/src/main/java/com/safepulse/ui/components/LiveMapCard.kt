@@ -88,11 +88,14 @@ fun LiveMapCard(
     var isExpanded by remember { mutableStateOf(false) }
     var mapController: LeafletMapController? by remember { mutableStateOf(null) }
     val context = LocalContext.current
+    val safetyRepository = remember(context) {
+        RiskZoneRepository(context.applicationContext)
+    }
 
     var nearbyItems by remember { mutableStateOf<List<MapNearbySafetyItem>>(emptyList()) }
     var nearbyLoading by remember { mutableStateOf(false) }
     var nearbyError by remember { mutableStateOf<String?>(null) }
-    var selectedNearbyCategory by remember { mutableStateOf<NearbyMapCategory?>(null) }
+    var selectedNearbyCategory by remember { mutableStateOf<NearbyMapCategory?>(NearbyMapCategory.ALL) }
     var selectedNearbyDetail by remember { mutableStateOf<MapSelectedSafetyDetail?>(null) }
     var crimeZonesForRoutes by remember { mutableStateOf<List<CrimeZoneData>>(emptyList()) }
 
@@ -113,14 +116,24 @@ fun LiveMapCard(
 
     val selectNearbyItem: (MapNearbySafetyItem) -> Unit = { item ->
         currentLocation?.let { origin ->
+            selectedNearbyDetail = MapSelectedSafetyDetail(
+                item = item,
+                safestRoute = null,
+                recommendation = VehicleRecommendation(
+                    vehicle = RecommendedVehicle.TRACKED_CAB,
+                    reason = "Preparing safest route and emergency actions"
+                )
+            )
+            mapController?.fitBounds(listOf(origin, item.location))
             scope.launch {
-                selectedNearbyDetail = null
                 val detail = withContext(Dispatchers.IO) {
-                    buildNearbySafetyDetail(context, origin, item, disasters)
+                    buildNearbySafetyDetail(safetyRepository, origin, item, disasters)
                 }
-                selectedNearbyDetail = detail
-                mapController?.drawSafeRoute(origin, item.location, crimeZonesForRoutes)
-                mapController?.fitBounds(listOf(origin, item.location))
+                if (selectedNearbyDetail?.item?.id == item.id) {
+                    selectedNearbyDetail = detail
+                    mapController?.drawSafeRoute(origin, item.location, crimeZonesForRoutes)
+                    mapController?.fitBounds(listOf(origin, item.location))
+                }
             }
         }
     }
@@ -161,7 +174,7 @@ fun LiveMapCard(
         selectedNearbyDetail = null
         try {
             val result = withContext(Dispatchers.IO) {
-                loadNearbySafetyForMap(context, location)
+                loadNearbySafetyForMap(safetyRepository, location)
             }
             nearbyItems = result.items
             crimeZonesForRoutes = result.crimeZones
@@ -746,14 +759,25 @@ fun RiskBadge(riskLevel: RiskLevel) {
 }
 
 private fun loadNearbySafetyForMap(
-    context: Context,
+    repository: RiskZoneRepository,
     location: LatLng
 ): NearbyMapLoadResult {
-    val repository = RiskZoneRepository(context)
     val items = mutableListOf<MapNearbySafetyItem>()
 
-    repository.getSafetyPlacesNear(location, NEARBY_SAFETY_RADIUS_KM)
-        .take(MAX_NEARBY_ITEMS)
+    val nearbyPlaces =
+        repository.getSafetyPlacesNear(
+            location = location,
+            maxDistanceKm = HOSPITAL_NEARBY_RADIUS_KM,
+            type = SafetyPlaceType.HOSPITAL,
+            maxResults = MAX_NEARBY_HOSPITALS
+        ) + repository.getSafetyPlacesNear(
+            location = location,
+            maxDistanceKm = POLICE_NEARBY_RADIUS_KM,
+            type = SafetyPlaceType.POLICE,
+            maxResults = MAX_NEARBY_POLICE
+        )
+
+    nearbyPlaces
         .forEach { place ->
             val distance = RiskZoneRepository.distanceKm(location, place.location)
             val riskScore = repository.computeRiskAtLocation(place.location)
@@ -776,18 +800,17 @@ private fun loadNearbySafetyForMap(
         }
 
     return NearbyMapLoadResult(
-        items = items.sortedBy { it.distanceKm },
+        items = items.sortedWith(compareBy<MapNearbySafetyItem> { it.distanceKm }.thenBy { it.name }),
         crimeZones = repository.getCrimeZonesForMap()
     )
 }
 
 private fun buildNearbySafetyDetail(
-    context: Context,
+    repository: RiskZoneRepository,
     origin: LatLng,
     item: MapNearbySafetyItem,
     disasters: List<DisasterAlert>
 ): MapSelectedSafetyDetail {
-    val repository = RiskZoneRepository(context)
     val routeOptions = repository.suggestSafeWaypoints(origin, item.location)
     val safestRoute = routeOptions.firstOrNull { it.isSafest }
         ?: routeOptions.minByOrNull { it.totalRiskScore }
@@ -1055,5 +1078,7 @@ fun createMockRoutesForTest(
     )
 }
 
-private const val NEARBY_SAFETY_RADIUS_KM = 5.0
-private const val MAX_NEARBY_ITEMS = 24
+private const val HOSPITAL_NEARBY_RADIUS_KM = 5.0
+private const val POLICE_NEARBY_RADIUS_KM = 25.0
+private const val MAX_NEARBY_HOSPITALS = 24
+private const val MAX_NEARBY_POLICE = 16
