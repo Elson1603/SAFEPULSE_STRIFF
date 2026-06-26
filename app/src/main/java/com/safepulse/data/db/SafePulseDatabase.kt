@@ -130,62 +130,49 @@ abstract class SafePulseDatabase : RoomDatabase() {
                 )
             }.toMutableList()
 
-            entities.addAll(loadPoliceStationEntities(context, gson))
-            entities.addAll(loadHospitalEntities(context, gson))
-
-            emergencyServiceDao().insertAll(entities)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun loadPoliceStationEntities(context: Context, gson: Gson): List<EmergencyServiceEntity> {
-        return try {
             val policeJson = context.assets.open("police_stations_india.json")
                 .bufferedReader()
                 .use { it.readText() }
             val policeType = object : TypeToken<List<PoliceStationJson>>() {}.type
             val policeStations: List<PoliceStationJson> = gson.fromJson(policeJson, policeType)
-            policeStations.map { station ->
-                EmergencyServiceEntity(
-                    id = POLICE_SERVICE_ID_OFFSET + station.id,
-                    name = station.name,
-                    type = "POLICE",
-                    address = "",
-                    phoneNumber = "",
-                    lat = station.lat,
-                    lng = station.lng,
-                    city = ""
-                )
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emptyList()
-        }
-    }
+            entities.addAll(
+                policeStations.map { station ->
+                    EmergencyServiceEntity(
+                        id = POLICE_SERVICE_ID_OFFSET + station.id,
+                        name = station.name,
+                        type = "POLICE",
+                        address = "",
+                        phoneNumber = "",
+                        lat = station.lat,
+                        lng = station.lng,
+                        city = ""
+                    )
+                }
+            )
 
-    private fun loadHospitalEntities(context: Context, gson: Gson): List<EmergencyServiceEntity> {
-        return try {
             val hospitalJson = context.assets.open("hospitals_india.json")
                 .bufferedReader()
                 .use { it.readText() }
             val hospitalType = object : TypeToken<List<HospitalJson>>() {}.type
             val hospitals: List<HospitalJson> = gson.fromJson(hospitalJson, hospitalType)
-            hospitals.map { hospital ->
-                EmergencyServiceEntity(
-                    id = HOSPITAL_SERVICE_ID_OFFSET + hospital.id,
-                    name = hospital.name,
-                    type = "HOSPITAL",
-                    address = "",
-                    phoneNumber = "",
-                    lat = hospital.lat,
-                    lng = hospital.lng,
-                    city = ""
-                )
-            }
+            entities.addAll(
+                hospitals.map { hospital ->
+                    EmergencyServiceEntity(
+                        id = HOSPITAL_SERVICE_ID_OFFSET + hospital.id,
+                        name = hospital.name,
+                        type = "HOSPITAL",
+                        address = "",
+                        phoneNumber = "",
+                        lat = hospital.lat,
+                        lng = hospital.lng,
+                        city = ""
+                    )
+                }
+            )
+
+            emergencyServiceDao().insertAll(entities)
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
         }
     }
     
