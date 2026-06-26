@@ -384,6 +384,7 @@
                     '<div class="popup-snippet">Hospital<br>Lat: ' + h.lat.toFixed(4) + ', Lng: ' + h.lng.toFixed(4) + '</div>' +
                     '</div>'
                 );
+                marker.on('click', function() { notifyMarkerClicked(h.id || null); });
                 hospitalLayer.addLayer(marker);
             });
         }
@@ -441,6 +442,7 @@
                     '<div class="popup-snippet">Police Station<br>Lat: ' + s.lat.toFixed(4) + ', Lng: ' + s.lng.toFixed(4) + '</div>' +
                     '</div>'
                 );
+                marker.on('click', function() { notifyMarkerClicked(s.id || null); });
                 policeLayer.addLayer(marker);
             });
         }
@@ -479,7 +481,13 @@
         }
 
         // ─── Markers ────────────────────────────────────────
-        function addMarker(lat, lng, title, snippet, color) {
+        function notifyMarkerClicked(markerId) {
+            if (markerId && window.AndroidBridge && window.AndroidBridge.onMarkerClicked) {
+                window.AndroidBridge.onMarkerClicked(markerId);
+            }
+        }
+
+        function addMarker(lat, lng, title, snippet, color, markerId) {
             var iconHtml = '<div class="custom-marker" style="background:' + color +
                 ';width:28px;height:28px;">\u25CF</div>';
             var icon = L.divIcon({
@@ -496,10 +504,11 @@
                 popupHtml += '</div>';
                 marker.bindPopup(popupHtml);
             }
+            marker.on('click', function() { notifyMarkerClicked(markerId); });
             return marker;
         }
 
-        function addMarkerWithIcon(lat, lng, title, snippet, emoji, bgColor) {
+        function addMarkerWithIcon(lat, lng, title, snippet, emoji, bgColor, markerId) {
             var iconHtml = '<div class="custom-marker" style="background:' + bgColor +
                 ';width:32px;height:32px;font-size:16px;">' + emoji + '</div>';
             var icon = L.divIcon({
@@ -516,6 +525,7 @@
                 popupHtml += '</div>';
                 marker.bindPopup(popupHtml);
             }
+            marker.on('click', function() { notifyMarkerClicked(markerId); });
         }
 
         // ─── User-Added Markers (tap to add, tap popup to remove) ──
@@ -967,9 +977,9 @@
             if (data.markers) {
                 data.markers.forEach(function(m) {
                     if (m.emoji) {
-                        addMarkerWithIcon(m.lat, m.lng, m.title || '', m.snippet || '', m.emoji, m.bgColor || m.color);
+                        addMarkerWithIcon(m.lat, m.lng, m.title || '', m.snippet || '', m.emoji, m.bgColor || m.color, m.id || null);
                     } else {
-                        addMarker(m.lat, m.lng, m.title || '', m.snippet || '', m.color || '#F44336');
+                        addMarker(m.lat, m.lng, m.title || '', m.snippet || '', m.color || '#F44336', m.id || null);
                     }
                 });
             }

@@ -36,6 +36,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.PolyUtil
 import com.safepulse.ui.map.CrimeZoneData
 import com.safepulse.ui.map.LeafletMapController
+import com.safepulse.ui.map.LeafletMapCallbacks
 import com.safepulse.ui.map.LeafletMapView
 import com.safepulse.ui.map.MapUpdateData
 import com.safepulse.ui.map.MarkerData
@@ -110,6 +111,20 @@ fun LiveMapCard(
 
     val scope = rememberCoroutineScope()
 
+    val selectNearbyItem: (MapNearbySafetyItem) -> Unit = { item ->
+        currentLocation?.let { origin ->
+            scope.launch {
+                selectedNearbyDetail = null
+                val detail = withContext(Dispatchers.IO) {
+                    buildNearbySafetyDetail(context, origin, item, disasters)
+                }
+                selectedNearbyDetail = detail
+                mapController?.drawSafeRoute(origin, item.location, crimeZonesForRoutes)
+                mapController?.fitBounds(listOf(origin, item.location))
+            }
+        }
+    }
+
     // Update location
     LaunchedEffect(hasLocationPermission) {
         if (hasLocationPermission) {
@@ -164,19 +179,24 @@ fun LiveMapCard(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 LeafletMapView(
-                    onMapReady = { controller ->
-                        mapController = controller
-                        currentLocation?.let { loc ->
-                            controller.setCenter(loc.latitude, loc.longitude, 13f)
-                            controller.setCurrentLocation(loc.latitude, loc.longitude)
+                    callbacks = LeafletMapCallbacks(
+                        onMapReady = { controller ->
+                            mapController = controller
+                            currentLocation?.let { loc ->
+                                controller.setCenter(loc.latitude, loc.longitude, 13f)
+                                controller.setCurrentLocation(loc.latitude, loc.longitude)
+                            }
+                            updateLeafletContent(
+                                controller,
+                                currentLocation,
+                                filteredNearbyItems,
+                                selectedNearbyDetail?.item
+                            )
+                        },
+                        onMarkerClicked = { markerId ->
+                            nearbyItems.firstOrNull { it.id == markerId }?.let(selectNearbyItem)
                         }
-                        updateLeafletContent(
-                            controller,
-                            currentLocation,
-                            filteredNearbyItems,
-                            selectedNearbyDetail?.item
-                        )
-                    },
+                    ),
                     modifier = Modifier.fillMaxSize()
                 )
 
@@ -203,19 +223,7 @@ fun LiveMapCard(
                         selectedNearbyDetail = null
                         mapController?.clearRoutes()
                     },
-                    onItemSelected = { item ->
-                        currentLocation?.let { origin ->
-                            scope.launch {
-                                selectedNearbyDetail = null
-                                val detail = withContext(Dispatchers.IO) {
-                                    buildNearbySafetyDetail(context, origin, item, disasters)
-                                }
-                                selectedNearbyDetail = detail
-                                mapController?.drawSafeRoute(origin, item.location, crimeZonesForRoutes)
-                                mapController?.fitBounds(listOf(origin, item.location))
-                            }
-                        }
-                    },
+                    onItemSelected = selectNearbyItem,
                     onClearSelection = {
                         selectedNearbyDetail = null
                         mapController?.clearRoutes()
@@ -240,19 +248,24 @@ fun LiveMapCard(
             Box {
             if (hasLocationPermission) {
                 LeafletMapView(
-                    onMapReady = { controller ->
-                        mapController = controller
-                        currentLocation?.let { loc ->
-                            controller.setCenter(loc.latitude, loc.longitude, 13f)
-                            controller.setCurrentLocation(loc.latitude, loc.longitude)
+                    callbacks = LeafletMapCallbacks(
+                        onMapReady = { controller ->
+                            mapController = controller
+                            currentLocation?.let { loc ->
+                                controller.setCenter(loc.latitude, loc.longitude, 13f)
+                                controller.setCurrentLocation(loc.latitude, loc.longitude)
+                            }
+                            updateLeafletContent(
+                                controller,
+                                currentLocation,
+                                filteredNearbyItems,
+                                selectedNearbyDetail?.item
+                            )
+                        },
+                        onMarkerClicked = { markerId ->
+                            nearbyItems.firstOrNull { it.id == markerId }?.let(selectNearbyItem)
                         }
-                        updateLeafletContent(
-                            controller,
-                            currentLocation,
-                            filteredNearbyItems,
-                            selectedNearbyDetail?.item
-                        )
-                    },
+                    ),
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
@@ -897,7 +910,8 @@ private fun updateLeafletContent(
                 "${"%.1f".format(item.distanceKm)} km | Risk ${item.riskLabel}",
                 style.color,
                 style.label,
-                style.color
+                style.color,
+                id = item.id
             )
         )
     }

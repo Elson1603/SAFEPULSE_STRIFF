@@ -32,6 +32,7 @@ import java.net.URL
 data class LeafletMapCallbacks(
     val onMapReady: (LeafletMapController) -> Unit = {},
     val onMapTapped: (Double, Double) -> Unit = { _, _ -> },
+    val onMarkerClicked: (String) -> Unit = {},
     val onMarkerAdded: (String, Double, Double) -> Unit = { _, _, _ -> },
     val onMarkerRemoved: (String) -> Unit = {},
     val onRouteReady: (Double, Int, String) -> Unit = { _, _, _ -> },
@@ -51,6 +52,7 @@ fun LeafletMapView(
     callbacks: LeafletMapCallbacks = LeafletMapCallbacks(onMapReady = onMapReady)
 ) {
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
+    val callbacksState = rememberUpdatedState(callbacks)
 
     AndroidView(
         factory = { ctx ->
@@ -85,32 +87,37 @@ fun LeafletMapView(
                 addJavascriptInterface(object {
                     @JavascriptInterface
                     fun onMapReady() {
-                        mainHandler.post { callbacks.onMapReady(ctrl) }
+                        mainHandler.post { callbacksState.value.onMapReady(ctrl) }
                     }
 
                     @JavascriptInterface
                     fun onMapTapped(lat: Double, lng: Double) {
-                        mainHandler.post { callbacks.onMapTapped(lat, lng) }
+                        mainHandler.post { callbacksState.value.onMapTapped(lat, lng) }
+                    }
+
+                    @JavascriptInterface
+                    fun onMarkerClicked(markerId: String) {
+                        mainHandler.post { callbacksState.value.onMarkerClicked(markerId) }
                     }
 
                     @JavascriptInterface
                     fun onMarkerAdded(markerId: String, lat: Double, lng: Double) {
-                        mainHandler.post { callbacks.onMarkerAdded(markerId, lat, lng) }
+                        mainHandler.post { callbacksState.value.onMarkerAdded(markerId, lat, lng) }
                     }
 
                     @JavascriptInterface
                     fun onMarkerRemoved(markerId: String) {
-                        mainHandler.post { callbacks.onMarkerRemoved(markerId) }
+                        mainHandler.post { callbacksState.value.onMarkerRemoved(markerId) }
                     }
 
                     @JavascriptInterface
                     fun onRouteReady(distanceKm: Double, durationMin: Int, coordsJson: String) {
-                        mainHandler.post { callbacks.onRouteReady(distanceKm, durationMin, coordsJson) }
+                        mainHandler.post { callbacksState.value.onRouteReady(distanceKm, durationMin, coordsJson) }
                     }
 
                     @JavascriptInterface
                     fun onRouteError(error: String) {
-                        mainHandler.post { callbacks.onRouteError(error) }
+                        mainHandler.post { callbacksState.value.onRouteError(error) }
                     }
 
                     @JavascriptInterface
@@ -266,12 +273,14 @@ class LeafletMapController(private val webView: WebView) {
     }
 
     // ─── Markers ─────────────────────────────────────────
-    fun addMarker(lat: Double, lng: Double, title: String, snippet: String = "", color: String = "#F44336") {
-        js("addMarker($lat, $lng, '${esc(title)}', '${esc(snippet)}', '$color')")
+    fun addMarker(lat: Double, lng: Double, title: String, snippet: String = "", color: String = "#F44336", markerId: String? = null) {
+        val id = markerId?.let { "'${esc(it)}'" } ?: "null"
+        js("addMarker($lat, $lng, '${esc(title)}', '${esc(snippet)}', '$color', $id)")
     }
 
-    fun addMarkerWithIcon(lat: Double, lng: Double, title: String, snippet: String = "", emoji: String, bgColor: String) {
-        js("addMarkerWithIcon($lat, $lng, '${esc(title)}', '${esc(snippet)}', '$emoji', '$bgColor')")
+    fun addMarkerWithIcon(lat: Double, lng: Double, title: String, snippet: String = "", emoji: String, bgColor: String, markerId: String? = null) {
+        val id = markerId?.let { "'${esc(it)}'" } ?: "null"
+        js("addMarkerWithIcon($lat, $lng, '${esc(title)}', '${esc(snippet)}', '$emoji', '$bgColor', $id)")
     }
 
     // ─── User-Added Markers (tap-to-add & removable) ──────
@@ -300,6 +309,7 @@ class LeafletMapController(private val webView: WebView) {
                 put("lat", s.lat)
                 put("lng", s.lng)
                 put("name", s.name)
+                if (s.id.isNotBlank()) put("id", s.id)
             })
         }
         js("addPoliceStations('${arr.toString().replace("'", "\\'")}')")
@@ -317,6 +327,7 @@ class LeafletMapController(private val webView: WebView) {
                 put("lat", h.lat)
                 put("lng", h.lng)
                 put("name", h.name)
+                if (h.id.isNotBlank()) put("id", h.id)
             })
         }
         js("addHospitals('${arr.toString().replace("'", "\\'")}')")
@@ -480,6 +491,7 @@ data class MapUpdateData(
                     put("title", m.title)
                     put("snippet", m.snippet)
                     put("color", m.color)
+                    m.id?.let { put("id", it) }
                     if (m.emoji != null) {
                         put("emoji", m.emoji)
                         put("bgColor", m.bgColor ?: m.color)
@@ -545,7 +557,8 @@ data class MarkerData(
     val snippet: String = "",
     val color: String = "#F44336",
     val emoji: String? = null,
-    val bgColor: String? = null
+    val bgColor: String? = null,
+    val id: String? = null
 )
 
 data class CircleData(
@@ -568,7 +581,8 @@ data class PolylineData(
 data class PoliceStationData(
     val lat: Double,
     val lng: Double,
-    val name: String
+    val name: String,
+    val id: String = ""
 )
 
 data class CrimeZoneData(
@@ -581,7 +595,8 @@ data class CrimeZoneData(
 data class HospitalData(
     val lat: Double,
     val lng: Double,
-    val name: String
+    val name: String,
+    val id: String = ""
 )
 
 data class SafeZoneData(

@@ -109,7 +109,8 @@ fun NearbySafetyScreen(
                 item.location.latitude, item.location.longitude,
                 "$emoji ${item.name}",
                 "${"%.1f".format(item.distanceKm)} km | Risk: ${item.riskLabel}",
-                bgColor, emoji, bgColor
+                bgColor, emoji, bgColor,
+                id = item.id
             ))
         }
 
@@ -199,13 +200,21 @@ fun NearbySafetyScreen(
                 if (hasLocationPermission) {
                     LeafletMapView(
                         modifier = Modifier.fillMaxSize(),
-                        onMapReady = { ctrl ->
-                            mapController = ctrl
-                            currentLocation?.let {
-                                ctrl.setCenter(it.latitude, it.longitude, 13f)
-                                ctrl.setCurrentLocation(it)
+                        callbacks = LeafletMapCallbacks(
+                            onMapReady = { ctrl ->
+                                mapController = ctrl
+                                currentLocation?.let {
+                                    ctrl.setCenter(it.latitude, it.longitude, 13f)
+                                    ctrl.setCurrentLocation(it)
+                                }
+                            },
+                            onMarkerClicked = { markerId ->
+                                val state = uiState as? NearbySafetyUiState.Success
+                                state?.items?.firstOrNull { it.id == markerId }?.let { item ->
+                                    viewModel.selectItem(item)
+                                }
                             }
-                        }
+                        )
                     )
                 } else {
                     Box(

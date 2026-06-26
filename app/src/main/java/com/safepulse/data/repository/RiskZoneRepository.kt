@@ -428,7 +428,7 @@ class RiskZoneRepository(private val context: Context) {
             .filter { it.type == SafetyPlaceType.POLICE }
             .filter { distanceKm(location, it.location) <= maxDistanceKm }
             .sortedBy { distanceKm(location, it.location) }
-            .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name) }
+            .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
     /**
@@ -437,7 +437,7 @@ class RiskZoneRepository(private val context: Context) {
     fun getAllPoliceStations(): List<PoliceStationData> {
         return loadSafetyPlaces()
             .filter { it.type == SafetyPlaceType.POLICE }
-            .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name) }
+            .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
     /**
@@ -446,7 +446,7 @@ class RiskZoneRepository(private val context: Context) {
     fun getAllHospitals(): List<HospitalData> {
         return loadSafetyPlaces()
             .filter { it.type == SafetyPlaceType.HOSPITAL }
-            .map { HospitalData(it.location.latitude, it.location.longitude, it.name) }
+            .map { HospitalData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
     /**
@@ -457,7 +457,7 @@ class RiskZoneRepository(private val context: Context) {
             .filter { it.type == SafetyPlaceType.HOSPITAL }
             .filter { distanceKm(location, it.location) <= maxDistanceKm }
             .sortedBy { distanceKm(location, it.location) }
-            .map { HospitalData(it.location.latitude, it.location.longitude, it.name) }
+            .map { HospitalData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
     /**

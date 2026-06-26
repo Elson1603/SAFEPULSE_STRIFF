@@ -49,7 +49,8 @@ abstract class SafePulseDatabase : RoomDatabase() {
             loadUnsafeZonesFromAssets(context)
         }
         
-        if (emergencyServiceCount == 0) {
+        if (emergencyServiceCount < COMPREHENSIVE_EMERGENCY_SERVICE_MIN_COUNT) {
+            emergencyServiceDao().deleteAll()
             loadEmergencyServicesFromAssets(context)
         }
     }
@@ -108,14 +109,15 @@ abstract class SafePulseDatabase : RoomDatabase() {
     
     private suspend fun loadEmergencyServicesFromAssets(context: Context) {
         try {
-            val json = context.assets.open("emergency_services.json")
+            val curatedJson = context.assets.open("emergency_services.json")
                 .bufferedReader()
                 .use { it.readText() }
             
-            val type = object : TypeToken<List<EmergencyServiceJson>>() {}.type
-            val services: List<EmergencyServiceJson> = Gson().fromJson(json, type)
+            val gson = Gson()
+            val curatedType = object : TypeToken<List<EmergencyServiceJson>>() {}.type
+            val curatedServices: List<EmergencyServiceJson> = gson.fromJson(curatedJson, curatedType)
             
-            val entities = services.map { s ->
+            val entities = curatedServices.map { s ->
                 EmergencyServiceEntity(
                     id = s.id,
                     name = s.name,
@@ -126,14 +128,72 @@ abstract class SafePulseDatabase : RoomDatabase() {
                     lng = s.lng,
                     city = s.city
                 )
-            }
+            }.toMutableList()
+
+            entities.addAll(loadPoliceStationEntities(context, gson))
+            entities.addAll(loadHospitalEntities(context, gson))
+
             emergencyServiceDao().insertAll(entities)
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
+
+    private fun loadPoliceStationEntities(context: Context, gson: Gson): List<EmergencyServiceEntity> {
+        return try {
+            val policeJson = context.assets.open("police_stations_india.json")
+                .bufferedReader()
+                .use { it.readText() }
+            val policeType = object : TypeToken<List<PoliceStationJson>>() {}.type
+            val policeStations: List<PoliceStationJson> = gson.fromJson(policeJson, policeType)
+            policeStations.map { station ->
+                EmergencyServiceEntity(
+                    id = POLICE_SERVICE_ID_OFFSET + station.id,
+                    name = station.name,
+                    type = "POLICE",
+                    address = "",
+                    phoneNumber = "",
+                    lat = station.lat,
+                    lng = station.lng,
+                    city = ""
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    private fun loadHospitalEntities(context: Context, gson: Gson): List<EmergencyServiceEntity> {
+        return try {
+            val hospitalJson = context.assets.open("hospitals_india.json")
+                .bufferedReader()
+                .use { it.readText() }
+            val hospitalType = object : TypeToken<List<HospitalJson>>() {}.type
+            val hospitals: List<HospitalJson> = gson.fromJson(hospitalJson, hospitalType)
+            hospitals.map { hospital ->
+                EmergencyServiceEntity(
+                    id = HOSPITAL_SERVICE_ID_OFFSET + hospital.id,
+                    name = hospital.name,
+                    type = "HOSPITAL",
+                    address = "",
+                    phoneNumber = "",
+                    lat = hospital.lat,
+                    lng = hospital.lng,
+                    city = ""
+                )
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
     
     companion object {
+        private const val COMPREHENSIVE_EMERGENCY_SERVICE_MIN_COUNT = 50_000
+        private const val POLICE_SERVICE_ID_OFFSET = 10_000_000_000L
+        private const val HOSPITAL_SERVICE_ID_OFFSET = 20_000_000_000L
+
         @Volatile
         private var INSTANCE: SafePulseDatabase? = null
         
@@ -183,4 +243,18 @@ private data class EmergencyServiceJson(
     val lat: Double,
     val lng: Double,
     val city: String
+)
+
+private data class PoliceStationJson(
+    val id: Long,
+    val name: String,
+    val lat: Double,
+    val lng: Double
+)
+
+private data class HospitalJson(
+    val id: Long,
+    val name: String,
+    val lat: Double,
+    val lng: Double
 )
