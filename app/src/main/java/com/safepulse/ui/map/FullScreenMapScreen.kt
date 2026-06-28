@@ -150,7 +150,11 @@ fun FullScreenMapScreen(
         val repo = RiskZoneRepository(context)
         val center = currentLocation ?: LatLng(28.6139, 77.2090)
         val stations = withContext(Dispatchers.IO) {
-            repo.getPoliceStationsNear(center, 30.0).take(MAX_LAYER_MARKERS)
+            repo.getPoliceStationsNearIncludingLive(
+                center,
+                maxDistanceKm = 30.0,
+                maxResults = MAX_LAYER_MARKERS
+            )
         }
         val hospitals = withContext(Dispatchers.IO) {
             repo.getHospitalsNear(center, 20.0).take(MAX_LAYER_MARKERS)

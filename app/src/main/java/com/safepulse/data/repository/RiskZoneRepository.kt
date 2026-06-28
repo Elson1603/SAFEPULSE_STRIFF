@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.safepulse.data.cache.MapDataCacheManager
 import com.safepulse.domain.riskmap.*
 import com.safepulse.ui.map.CrimeZoneData
 import com.safepulse.ui.map.HospitalData
@@ -18,11 +19,20 @@ import kotlin.math.*
 class RiskZoneRepository(private val context: Context) {
 
     private val liveRiskFeedClient = LiveRiskFeedClient()
+    private val livePoliceStationClient = LivePoliceStationClient()
+    private val mapDataCache = MapDataCacheManager(context)
     private var crimeZonesCache: List<CrimeRiskZone>? = null
+    private var curatedCrimeZonesCache: List<CrimeRiskZone>? = null
     private var disasterZonesCache: List<DisasterRiskZone>? = null
     private var safetyPlacesCache: List<SafetyPlace>? = null
+    private var policePlacesCache: List<SafetyPlace>? = null
+    private var hospitalPlacesCache: List<SafetyPlace>? = null
     private var liveRiskDataCache: CombinedRiskData? = null
     private var liveRiskFetchedAtMillis: Long = 0L
+    private var livePoliceCache: List<SafetyPlace> = emptyList()
+    private var livePoliceCacheCenter: LatLng? = null
+    private var livePoliceCacheRadiusKm: Double = 0.0
+    private var livePoliceFetchedAtMillis: Long = 0L
 
     fun loadCrimeRiskZones(): List<CrimeRiskZone> {
         crimeZonesCache?.let { return it }
@@ -40,6 +50,23 @@ class RiskZoneRepository(private val context: Context) {
             val parsed: List<CrimeRiskZoneJson> = Gson().fromJson(json, type)
 
             parsed.map { it.toDomain() }.also { crimeZonesCache = it }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    fun loadCuratedCrimeRiskZones(): List<CrimeRiskZone> {
+        curatedCrimeZonesCache?.let { return it }
+
+        return try {
+            val json = context.assets.open("crime_risk_zones.json")
+                .bufferedReader().use { it.readText() }
+
+            val type = object : TypeToken<List<CrimeRiskZoneJson>>() {}.type
+            val parsed: List<CrimeRiskZoneJson> = Gson().fromJson(json, type)
+
+            parsed.map { it.toDomain() }.also { curatedCrimeZonesCache = it }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
@@ -160,6 +187,13 @@ class RiskZoneRepository(private val context: Context) {
     fun loadSafetyPlaces(): List<SafetyPlace> {
         safetyPlacesCache?.let { return it }
 
+        return (loadPolicePlaces() + loadHospitalPlaces())
+            .also { safetyPlacesCache = it }
+    }
+
+    fun loadPolicePlaces(): List<SafetyPlace> {
+        policePlacesCache?.let { return it }
+
         val places = mutableListOf<SafetyPlace>()
         val seenPoliceKeys = mutableSetOf<String>()
 
@@ -192,18 +226,26 @@ class RiskZoneRepository(private val context: Context) {
             e.printStackTrace()
         }
 
+        policePlacesCache = places
+        return places
+    }
+
+    fun loadHospitalPlaces(): List<SafetyPlace> {
+        hospitalPlacesCache?.let { return it }
+
         // Load hospitals from the comprehensive OSM dataset (54K entries)
-        try {
+        val places = try {
             val hospitalJson = context.assets.open("hospitals_india.json")
                 .bufferedReader().use { it.readText() }
             val hospitalType = object : TypeToken<List<HospitalJson>>() {}.type
             val hospitals: List<HospitalJson> = Gson().fromJson(hospitalJson, hospitalType)
-            places.addAll(hospitals.map { it.toDomain() })
+            hospitals.map { it.toDomain() }
         } catch (e: Exception) {
             e.printStackTrace()
+            emptyList()
         }
 
-        safetyPlacesCache = places
+        hospitalPlacesCache = places
         return places
     }
 
@@ -223,14 +265,132 @@ class RiskZoneRepository(private val context: Context) {
         type: SafetyPlaceType?,
         maxResults: Int = Int.MAX_VALUE
     ): List<SafetyPlace> {
-        return loadSafetyPlaces()
+        val cacheKey = nearbySafetyCacheKey(location, maxDistanceKm, type, maxResults)
+        mapDataCache.get<List<CachedSafetyPlace>>(
+            namespace = MAP_CACHE_NAMESPACE_NEARBY_SAFETY,
+            key = cacheKey,
+            type = CACHED_SAFETY_PLACE_LIST_TYPE,
+            ttlMillis = NEARBY_SAFETY_CACHE_TTL_MILLIS
+        )?.let { cached ->
+            return cached.map { it.toDomain() }
+        }
+
+        val places = when (type) {
+            SafetyPlaceType.POLICE -> loadPolicePlaces()
+            SafetyPlaceType.HOSPITAL -> loadHospitalPlaces()
+            null -> loadSafetyPlaces()
+        }
+
+        val result = places
             .asSequence()
-            .filter { type == null || it.type == type }
             .map { place -> place to distanceKm(location, place.location) }
             .filter { it.second <= maxDistanceKm }
             .sortedBy { it.second }
             .take(maxResults)
             .map { it.first }
+            .toList()
+
+        if (result.isNotEmpty()) {
+            mapDataCache.put(
+                namespace = MAP_CACHE_NAMESPACE_NEARBY_SAFETY,
+                key = cacheKey,
+                value = result.map { it.toCachedSafetyPlace() }
+            )
+        }
+
+        return result
+    }
+
+    /**
+     * Get nearby police stations from bundled OSM assets, with a live Overpass fallback
+     * when the local dataset has too few results around the user.
+     */
+    suspend fun getPolicePlacesNearIncludingLive(
+        location: LatLng,
+        maxDistanceKm: Double = 30.0,
+        maxResults: Int = Int.MAX_VALUE
+    ): List<SafetyPlace> {
+        val bundled = getSafetyPlacesNear(
+            location = location,
+            maxDistanceKm = maxDistanceKm,
+            type = SafetyPlaceType.POLICE,
+            maxResults = maxResults
+        )
+
+        val live = if (bundled.size < MIN_NEARBY_POLICE_RESULTS) {
+            fetchLivePolicePlaces(location, maxDistanceKm, maxResults)
+        } else {
+            emptyList()
+        }
+
+        return mergeSafetyPlaces(location, maxDistanceKm, maxResults, bundled, live)
+    }
+
+    private suspend fun fetchLivePolicePlaces(
+        location: LatLng,
+        maxDistanceKm: Double,
+        maxResults: Int
+    ): List<SafetyPlace> {
+        val now = System.currentTimeMillis()
+        val cachedCenter = livePoliceCacheCenter
+        val canReuseCache = cachedCenter != null &&
+                now - livePoliceFetchedAtMillis < LIVE_POLICE_TTL_MILLIS &&
+                livePoliceCacheRadiusKm >= maxDistanceKm &&
+                distanceKm(cachedCenter, location) <= LIVE_POLICE_CACHE_REUSE_DISTANCE_KM
+
+        if (canReuseCache) return livePoliceCache
+
+        val cacheKey = livePoliceCacheKey(location, maxDistanceKm, maxResults)
+        mapDataCache.get<List<CachedSafetyPlace>>(
+            namespace = MAP_CACHE_NAMESPACE_LIVE_POLICE,
+            key = cacheKey,
+            type = CACHED_SAFETY_PLACE_LIST_TYPE,
+            ttlMillis = LIVE_POLICE_DISK_CACHE_TTL_MILLIS
+        )?.let { cached ->
+            val cachedPlaces = cached.map { it.toDomain() }
+            livePoliceCache = cachedPlaces
+            livePoliceCacheCenter = location
+            livePoliceCacheRadiusKm = maxDistanceKm
+            livePoliceFetchedAtMillis = now
+            return cachedPlaces
+        }
+
+        val radiusMeters = (maxDistanceKm * 1000).toInt()
+        val livePlaces = runCatching {
+            livePoliceStationClient.fetchPoliceStationsNear(
+                location = location,
+                radiusMeters = radiusMeters,
+                maxResults = maxResults.coerceAtMost(MAX_LIVE_POLICE_RESULTS)
+            )
+        }.getOrDefault(emptyList())
+
+        livePoliceCache = livePlaces
+        livePoliceCacheCenter = location
+        livePoliceCacheRadiusKm = maxDistanceKm
+        livePoliceFetchedAtMillis = now
+        if (livePlaces.isNotEmpty()) {
+            mapDataCache.put(
+                namespace = MAP_CACHE_NAMESPACE_LIVE_POLICE,
+                key = cacheKey,
+                value = livePlaces.map { it.toCachedSafetyPlace() }
+            )
+        }
+        return livePlaces
+    }
+
+    private fun mergeSafetyPlaces(
+        location: LatLng,
+        maxDistanceKm: Double,
+        maxResults: Int,
+        vararg sources: List<SafetyPlace>
+    ): List<SafetyPlace> {
+        return sources
+            .flatMap { it }
+            .asSequence()
+            .filter { distanceKm(location, it.location) <= maxDistanceKm }
+            .distinctBy { it.dedupeKey() }
+            .sortedBy { distanceKm(location, it.location) }
+            .take(maxResults)
             .toList()
     }
 
@@ -461,12 +621,20 @@ class RiskZoneRepository(private val context: Context) {
             .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
+    suspend fun getPoliceStationsNearIncludingLive(
+        location: LatLng,
+        maxDistanceKm: Double = 30.0,
+        maxResults: Int = Int.MAX_VALUE
+    ): List<PoliceStationData> {
+        return getPolicePlacesNearIncludingLive(location, maxDistanceKm, maxResults)
+            .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
+    }
+
     /**
      * Get ALL police stations across India for map display
      */
     fun getAllPoliceStations(): List<PoliceStationData> {
-        return loadSafetyPlaces()
-            .filter { it.type == SafetyPlaceType.POLICE }
+        return loadPolicePlaces()
             .map { PoliceStationData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
@@ -474,8 +642,7 @@ class RiskZoneRepository(private val context: Context) {
      * Get ALL hospitals across India for map display
      */
     fun getAllHospitals(): List<HospitalData> {
-        return loadSafetyPlaces()
-            .filter { it.type == SafetyPlaceType.HOSPITAL }
+        return loadHospitalPlaces()
             .map { HospitalData(it.location.latitude, it.location.longitude, it.name, "place_${it.id}") }
     }
 
@@ -492,6 +659,22 @@ class RiskZoneRepository(private val context: Context) {
      */
     fun getSafeZonesNear(location: LatLng, maxDistanceKm: Double = 50.0): List<SafeZoneData> {
         return loadCrimeRiskZones()
+            .filter { it.crimeRiskScore < 0.3f }
+            .filter { distanceKm(location, it.location) <= maxDistanceKm }
+            .sortedBy { distanceKm(location, it.location) }
+            .map { zone ->
+                SafeZoneData(
+                    lat = zone.location.latitude,
+                    lng = zone.location.longitude,
+                    name = "${zone.city} Safe Area",
+                    state = zone.state,
+                    radiusMeters = zone.radiusMeters.toDouble()
+                )
+            }
+    }
+
+    fun getSafeZonesNearFast(location: LatLng, maxDistanceKm: Double = 50.0): List<SafeZoneData> {
+        return loadCuratedCrimeRiskZones()
             .filter { it.crimeRiskScore < 0.3f }
             .filter { distanceKm(location, it.location) <= maxDistanceKm }
             .sortedBy { distanceKm(location, it.location) }
@@ -559,9 +742,42 @@ class RiskZoneRepository(private val context: Context) {
             .toList()
     }
 
+    fun getCrimeZonesForMapNearFast(
+        location: LatLng,
+        maxDistanceKm: Double = 100.0,
+        maxResults: Int = 250
+    ): List<CrimeZoneData> {
+        return loadCuratedCrimeRiskZones()
+            .asSequence()
+            .filter { distanceKm(location, it.location) <= maxDistanceKm }
+            .sortedWith(compareByDescending<CrimeRiskZone> { it.crimeRiskScore }
+                .thenBy { distanceKm(location, it.location) })
+            .take(maxResults)
+            .map { zone ->
+                CrimeZoneData(
+                    lat = zone.location.latitude,
+                    lng = zone.location.longitude,
+                    radiusMeters = zone.radiusMeters.toDouble(),
+                    crimeRiskScore = zone.crimeRiskScore
+                )
+            }
+            .toList()
+    }
+
     companion object {
         private const val MASTER_DATASET_ASSET = "master_dataset.csv"
         private const val LIVE_RISK_TTL_MILLIS = 15 * 60_000L
+        private const val LIVE_POLICE_TTL_MILLIS = 30 * 60_000L
+        private const val LIVE_POLICE_DISK_CACHE_TTL_MILLIS = 7L * 24L * 60L * 60L * 1000L
+        private const val NEARBY_SAFETY_CACHE_TTL_MILLIS = 14L * 24L * 60L * 60L * 1000L
+        private const val LIVE_POLICE_CACHE_REUSE_DISTANCE_KM = 2.0
+        private const val MIN_NEARBY_POLICE_RESULTS = 5
+        private const val MAX_LIVE_POLICE_RESULTS = 80
+        private const val MAP_CACHE_NAMESPACE_NEARBY_SAFETY = "nearby_safety_v1"
+        private const val MAP_CACHE_NAMESPACE_LIVE_POLICE = "live_police_v1"
+
+        private val CACHED_SAFETY_PLACE_LIST_TYPE =
+            object : TypeToken<List<CachedSafetyPlace>>() {}.type
 
         fun distanceMeters(p1: LatLng, p2: LatLng): Float {
             val earthRadius = 6371000.0
@@ -578,6 +794,30 @@ class RiskZoneRepository(private val context: Context) {
             return distanceMeters(p1, p2).toDouble() / 1000.0
         }
     }
+}
+
+private data class CachedSafetyPlace(
+    val id: Long,
+    val name: String,
+    val type: String,
+    val address: String,
+    val phoneNumber: String,
+    val lat: Double,
+    val lng: Double,
+    val city: String
+) {
+    fun toDomain() = SafetyPlace(
+        id = id,
+        name = name,
+        type = when (type) {
+            SafetyPlaceType.HOSPITAL.name -> SafetyPlaceType.HOSPITAL
+            else -> SafetyPlaceType.POLICE
+        },
+        address = address,
+        phoneNumber = phoneNumber,
+        location = LatLng(lat, lng),
+        city = city
+    )
 }
 
 private data class MasterRiskRow(
@@ -853,6 +1093,53 @@ private fun SafetyPlace.dedupeKey(): String {
     val roundedLat = "%.5f".format(location.latitude)
     val roundedLng = "%.5f".format(location.longitude)
     return "${type.name}:${name.lowercase().trim()}:$roundedLat:$roundedLng"
+}
+
+private fun SafetyPlace.toCachedSafetyPlace(): CachedSafetyPlace {
+    return CachedSafetyPlace(
+        id = id,
+        name = name,
+        type = type.name,
+        address = address,
+        phoneNumber = phoneNumber,
+        lat = location.latitude,
+        lng = location.longitude,
+        city = city
+    )
+}
+
+private fun nearbySafetyCacheKey(
+    location: LatLng,
+    maxDistanceKm: Double,
+    type: SafetyPlaceType?,
+    maxResults: Int
+): String {
+    val resultLimit = if (maxResults == Int.MAX_VALUE) "all" else maxResults.toString()
+    return listOf(
+        cacheGridKey(location),
+        "radius_${maxDistanceKm.toInt()}",
+        "type_${type?.name ?: "ALL"}",
+        "limit_$resultLimit"
+    ).joinToString("|")
+}
+
+private fun livePoliceCacheKey(
+    location: LatLng,
+    maxDistanceKm: Double,
+    maxResults: Int
+): String {
+    val resultLimit = if (maxResults == Int.MAX_VALUE) "all" else maxResults.toString()
+    return listOf(
+        cacheGridKey(location),
+        "radius_${maxDistanceKm.toInt()}",
+        "limit_$resultLimit"
+    ).joinToString("|")
+}
+
+private fun cacheGridKey(location: LatLng): String {
+    val lat = "%.3f".format(location.latitude)
+    val lng = "%.3f".format(location.longitude)
+    return "$lat,$lng"
 }
 
 private fun stablePoliceId(rawId: String?, name: String?, index: Int): Long {

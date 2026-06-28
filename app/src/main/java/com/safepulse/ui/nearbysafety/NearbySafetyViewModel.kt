@@ -6,13 +6,18 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
 import com.safepulse.data.repository.RiskZoneRepository
 import com.safepulse.domain.riskmap.SafeRouteOption
+import com.safepulse.domain.riskmap.SafetyPlace
 import com.safepulse.domain.riskmap.SafetyPlaceType
 import com.safepulse.domain.saferoutes.*
 import com.safepulse.ui.map.CrimeZoneData
 import com.safepulse.ui.map.HospitalData
 import com.safepulse.ui.map.PoliceStationData
 import com.safepulse.ui.map.SafeZoneData
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,71 +77,107 @@ class NearbySafetyViewModel(
     val crimeZonesForMap: StateFlow<List<CrimeZoneData>> = _crimeZonesForMap.asStateFlow()
 
     private var nearbyLayerDataLoaded = false
+    private var nearbyLoadJob: Job? = null
 
     fun updateCurrentLocation(location: LatLng) {
         _currentLocation.value = location
         loadNearbyPlaces(location)
-        if (!nearbyLayerDataLoaded) {
-            nearbyLayerDataLoaded = true
-            viewModelScope.launch(Dispatchers.IO) {
-                _policeStations.value = riskZoneRepository.getPoliceStationsNear(location, 30.0)
-                    .take(MAX_LAYER_MARKERS)
-                _hospitals.value = riskZoneRepository.getHospitalsNear(location, 20.0)
-                    .take(MAX_LAYER_MARKERS)
-                _safeZones.value = riskZoneRepository.getSafeZonesNear(location, 50.0)
-                    .take(MAX_SAFE_ZONE_MARKERS)
-                _crimeZonesForMap.value = riskZoneRepository.getCrimeZonesForMap()
-            }
-        }
     }
 
     private fun loadNearbyPlaces(location: LatLng) {
-        viewModelScope.launch(Dispatchers.IO) {
+        nearbyLoadJob?.cancel()
+        nearbyLoadJob = viewModelScope.launch(Dispatchers.IO) {
             try {
-                val items = mutableListOf<NearbySafetyItem>()
+                coroutineScope {
+                    val nearbyPolice = riskZoneRepository.getSafetyPlacesNear(
+                        location = location,
+                        maxDistanceKm = 30.0,
+                        type = SafetyPlaceType.POLICE,
+                        maxResults = MAX_NEARBY_POLICE_ITEMS
+                    )
+                    val policeItems = nearbyPolice.toNearbyItems(
+                        origin = location,
+                        category = SafetyCategory.POLICE,
+                        fallbackSubtitle = "Police station"
+                    )
+                    _policeStations.value = nearbyPolice.toPoliceStationData()
+                        .take(MAX_LAYER_MARKERS)
+                    if (policeItems.isNotEmpty()) {
+                        publishNearbyItems(policeItems)
+                    }
 
-                val safetyPlaces = riskZoneRepository.getSafetyPlacesNear(location, 30.0)
-                    .take(MAX_NEARBY_ITEMS)
-                safetyPlaces.forEach { place ->
-                    val dist = RiskZoneRepository.distanceKm(location, place.location)
-                    val risk = riskZoneRepository.computeRiskAtLocation(place.location)
-                    items.add(NearbySafetyItem(
-                        id = "place_${place.id}",
-                        name = place.name,
-                        category = when (place.type) {
-                            SafetyPlaceType.POLICE -> SafetyCategory.POLICE
-                            SafetyPlaceType.HOSPITAL -> SafetyCategory.HOSPITAL
-                        },
-                        location = place.location,
-                        distanceKm = dist,
-                        riskScore = risk,
-                        riskLabel = riskLabel(risk),
-                        subtitle = place.address.ifEmpty { place.city },
-                        phoneNumber = place.phoneNumber
-                    ))
+                    val nearbyHospitals = riskZoneRepository.getSafetyPlacesNear(
+                        location = location,
+                        maxDistanceKm = 20.0,
+                        type = SafetyPlaceType.HOSPITAL,
+                        maxResults = MAX_NEARBY_HOSPITAL_ITEMS
+                    )
+                    val hospitalItems = nearbyHospitals.toNearbyItems(
+                        origin = location,
+                        category = SafetyCategory.HOSPITAL,
+                        fallbackSubtitle = "Hospital"
+                    )
+                    _hospitals.value = nearbyHospitals.toHospitalData()
+                        .take(MAX_LAYER_MARKERS)
+                    val baseItems = policeItems + hospitalItems
+                    publishNearbyItems(baseItems)
+
+                    val safeZonesDeferred = async {
+                        riskZoneRepository.getSafeZonesNearFast(location, 50.0)
+                            .take(MAX_SAFE_ZONE_ITEMS)
+                    }
+                    val livePoliceDeferred = if (nearbyPolice.size < MIN_FAST_POLICE_RESULTS) {
+                        async {
+                            riskZoneRepository.getPolicePlacesNearIncludingLive(
+                                location = location,
+                                maxDistanceKm = 30.0,
+                                maxResults = MAX_NEARBY_POLICE_ITEMS
+                            )
+                        }
+                    } else {
+                        null
+                    }
+
+                    val safeZones = safeZonesDeferred.await()
+                    val safeZoneItems = safeZones.map { zone ->
+                        val zoneLocation = LatLng(zone.lat, zone.lng)
+                        NearbySafetyItem(
+                            id = "safezone_${zone.name}_${zone.lat}_${zone.lng}",
+                            name = zone.name,
+                            category = SafetyCategory.SAFE_ZONE,
+                            location = zoneLocation,
+                            distanceKm = RiskZoneRepository.distanceKm(location, zoneLocation),
+                            riskScore = 0f,
+                            riskLabel = "LOW",
+                            subtitle = "${zone.state} - Low crime area"
+                        )
+                    }
+                    if (!nearbyLayerDataLoaded) {
+                        _safeZones.value = safeZones
+                            .take(MAX_SAFE_ZONE_MARKERS)
+                        _crimeZonesForMap.value = riskZoneRepository.getCrimeZonesForMapNearFast(location)
+                        nearbyLayerDataLoaded = true
+                    }
+
+                    var latestItems = baseItems + safeZoneItems
+                    publishNearbyItems(latestItems)
+
+                    val livePolice = livePoliceDeferred?.await().orEmpty()
+                    if (livePolice.isNotEmpty() && livePolice.size > nearbyPolice.size) {
+                        val livePoliceItems = livePolice.toNearbyItems(
+                            origin = location,
+                            category = SafetyCategory.POLICE,
+                            fallbackSubtitle = "Police station"
+                        )
+                        _policeStations.value = livePolice.toPoliceStationData()
+                            .take(MAX_LAYER_MARKERS)
+                        latestItems = latestItems.filterNot { it.category == SafetyCategory.POLICE } +
+                                livePoliceItems
+                        publishNearbyItems(latestItems)
+                    }
                 }
-
-                val crimeZones = riskZoneRepository.loadCrimeRiskZones()
-                crimeZones
-                    .filter { it.crimeRiskScore < 0.3f }
-                    .filter { RiskZoneRepository.distanceKm(location, it.location) <= 50.0 }
-                    .take(MAX_SAFE_ZONE_ITEMS)
-                    .forEach { zone ->
-                    val dist = RiskZoneRepository.distanceKm(location, zone.location)
-                    val risk = riskZoneRepository.computeRiskAtLocation(zone.location)
-                    items.add(NearbySafetyItem(
-                        id = "safezone_${zone.city}",
-                        name = "${zone.city} Safe Area",
-                        category = SafetyCategory.SAFE_ZONE,
-                        location = zone.location,
-                        distanceKm = dist,
-                        riskScore = risk,
-                        riskLabel = riskLabel(risk),
-                        subtitle = "${zone.state} - Low crime area"
-                    ))
-                }
-
-                _uiState.value = NearbySafetyUiState.Success(items = items.sortedBy { it.distanceKm })
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _uiState.value = NearbySafetyUiState.Error(
                     e.message ?: "Failed to load nearby safety places"
@@ -195,17 +236,66 @@ class NearbySafetyViewModel(
         }
     }
 
-    private fun riskLabel(risk: Float): String = when {
-        risk >= 0.7f -> "HIGH"
-        risk >= 0.4f -> "MEDIUM"
-        else -> "LOW"
+    private fun List<SafetyPlace>.toNearbyItems(
+        origin: LatLng,
+        category: SafetyCategory,
+        fallbackSubtitle: String
+    ): List<NearbySafetyItem> {
+        return map { place ->
+            NearbySafetyItem(
+                id = "place_${place.id}",
+                name = place.name,
+                category = category,
+                location = place.location,
+                distanceKm = RiskZoneRepository.distanceKm(origin, place.location),
+                riskScore = 0f,
+                riskLabel = "LOW",
+                subtitle = place.address.ifEmpty { place.city.ifEmpty { fallbackSubtitle } },
+                phoneNumber = place.phoneNumber
+            )
+        }
+    }
+
+    private fun List<SafetyPlace>.toPoliceStationData(): List<PoliceStationData> {
+        return map {
+            PoliceStationData(
+                lat = it.location.latitude,
+                lng = it.location.longitude,
+                name = it.name,
+                id = "place_${it.id}"
+            )
+        }
+    }
+
+    private fun List<SafetyPlace>.toHospitalData(): List<HospitalData> {
+        return map {
+            HospitalData(
+                lat = it.location.latitude,
+                lng = it.location.longitude,
+                name = it.name,
+                id = "place_${it.id}"
+            )
+        }
+    }
+
+    private fun publishNearbyItems(items: List<NearbySafetyItem>) {
+        val current = _uiState.value as? NearbySafetyUiState.Success
+        _uiState.value = NearbySafetyUiState.Success(
+            items = items
+                .distinctBy { it.id }
+                .sortedBy { it.distanceKm },
+            selectedCategory = current?.selectedCategory ?: SafetyCategory.ALL,
+            selectedDetail = current?.selectedDetail
+        )
     }
 }
 
 private const val MAX_LAYER_MARKERS = 80
 private const val MAX_SAFE_ZONE_MARKERS = 24
-private const val MAX_NEARBY_ITEMS = 160
+private const val MAX_NEARBY_POLICE_ITEMS = 80
+private const val MAX_NEARBY_HOSPITAL_ITEMS = 80
 private const val MAX_SAFE_ZONE_ITEMS = 30
+private const val MIN_FAST_POLICE_RESULTS = 5
 
 class NearbySafetyViewModelFactory(
     private val riskZoneRepository: RiskZoneRepository,

@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.maps.model.LatLng
 import com.google.gson.Gson
 import com.safepulse.SafePulseApplication
+import com.safepulse.data.cache.MapDataCacheManager
 import com.safepulse.data.db.entity.EmergencyContactEntity
 import com.safepulse.data.repository.EmergencyContactRepository
 import com.safepulse.data.security.PinVerificationResult
@@ -616,7 +617,8 @@ class SafetyFeatureManager private constructor(private val context: Context) {
 
     private fun buildOfflineCacheSummary(): String {
         val tileCache = TileCacheManager(context)
-        return "Maps: ${tileCache.getCacheSizeFormatted()} cached, safety datasets bundled"
+        val mapDataCache = MapDataCacheManager(context)
+        return "Maps: ${tileCache.getCacheSizeFormatted()} tiles, ${mapDataCache.getCacheSizeFormatted()} safety/route data cached"
     }
 
     private fun readSafetyCheckInState(): SafetyCheckInState {

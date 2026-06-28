@@ -67,8 +67,11 @@ class RiskMapViewModel(
                 _safetyPlaces.value = riskZoneRepository.getSafetyPlacesNear(center, 30.0)
                 if (!nearbyLayerDataLoaded) {
                     nearbyLayerDataLoaded = true
-                    _policeStations.value = riskZoneRepository.getPoliceStationsNear(center, 30.0)
-                        .take(MAX_LAYER_MARKERS)
+                    _policeStations.value = riskZoneRepository.getPoliceStationsNearIncludingLive(
+                        center,
+                        maxDistanceKm = 30.0,
+                        maxResults = MAX_LAYER_MARKERS
+                    )
                     _hospitals.value = riskZoneRepository.getHospitalsNear(center, 20.0)
                         .take(MAX_LAYER_MARKERS)
                     _safeZones.value = riskZoneRepository.getSafeZonesNear(center, 50.0)
@@ -101,8 +104,11 @@ class RiskMapViewModel(
             )
 
             _safetyPlaces.value = riskZoneRepository.getSafetyPlacesNear(location, 30.0)
-            _policeStations.value = riskZoneRepository.getPoliceStationsNear(location, 30.0)
-                .take(MAX_LAYER_MARKERS)
+            _policeStations.value = riskZoneRepository.getPoliceStationsNearIncludingLive(
+                location,
+                maxDistanceKm = 30.0,
+                maxResults = MAX_LAYER_MARKERS
+            )
             _hospitals.value = riskZoneRepository.getHospitalsNear(location, 20.0)
                 .take(MAX_LAYER_MARKERS)
             _safeZones.value = riskZoneRepository.getSafeZonesNear(location, 50.0)

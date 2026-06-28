@@ -62,8 +62,11 @@ class SafeRoutesViewModel(
                 _crimeZonesForMap.value = repo.getCrimeZonesForMap()
                 if (!nearbyMapDataLoaded) {
                     nearbyMapDataLoaded = true
-                    _policeStations.value = repo.getPoliceStationsNear(location, 30.0)
-                        .take(MAX_LAYER_MARKERS)
+                    _policeStations.value = repo.getPoliceStationsNearIncludingLive(
+                        location,
+                        maxDistanceKm = 30.0,
+                        maxResults = MAX_LAYER_MARKERS
+                    )
                     _hospitals.value = repo.getHospitalsNear(location, 20.0)
                         .take(MAX_LAYER_MARKERS)
                     _safeZones.value = repo.getSafeZonesNear(location, 50.0)
